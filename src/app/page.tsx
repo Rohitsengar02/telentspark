@@ -66,9 +66,13 @@ export default function Home() {
 
   return (
     <div className={themeClass}>
-      <Layout>
-        {renderContent()}
-      </Layout>
+      {role === 'admin' ? (
+        <AdminDashboard />
+      ) : (
+        <Layout>
+          {renderContent()}
+        </Layout>
+      )}
     </div>
   );
 }
