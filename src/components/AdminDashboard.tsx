@@ -348,6 +348,7 @@ export default function AdminDashboard() {
   const [proformaAdvancePct, setProformaAdvancePct] = useState<number>(30);
   const [showCreateInvoiceModal, setShowCreateInvoiceModal] = useState<boolean>(false);
   const [selectedInvoice, setSelectedInvoice] = useState<any>(null);
+  const [invoiceSearchQuery, setInvoiceSearchQuery] = useState<string>('');
   const [invoicesList, setInvoicesList] = useState([
     { id: 'INV-2026-001', customer: 'Global Distribs', amount: 53100, date: '2026-06-19', status: 'Paid', items: [{ name: 'Premium Grade Silica', qty: 100, rate: 450, gst: 18 }] },
     { id: 'INV-2026-002', customer: 'Nexus Pharma', amount: 8496, date: '2026-06-18', status: 'Pending', items: [{ name: 'Pure Stearic Acid Powder', qty: 40, rate: 180, gst: 18 }] },
@@ -519,6 +520,18 @@ export default function AdminDashboard() {
       ]
     },
     {
+      name: 'Billing & Invoices',
+      icon: FileSpreadsheet,
+      subsections: [
+        { name: 'All Invoices' },
+        { name: 'Draft Invoices' },
+        { name: 'Paid Invoices' },
+        { name: 'Pending Invoices' },
+        { name: 'Overdue Invoices' },
+        { name: 'Recurring Invoices' }
+      ]
+    },
+    {
       name: 'Lead Management',
       icon: Users,
       subsections: [
@@ -550,18 +563,6 @@ export default function AdminDashboard() {
         { name: 'Estimates' },
         { name: 'Sales Orders' },
         { name: 'Proforma Invoice' }
-      ]
-    },
-    {
-      name: 'Billing & Invoices',
-      icon: FileSpreadsheet,
-      subsections: [
-        { name: 'All Invoices' },
-        { name: 'Draft Invoices' },
-        { name: 'Paid Invoices' },
-        { name: 'Pending Invoices' },
-        { name: 'Overdue Invoices' },
-        { name: 'Recurring Invoices' }
       ]
     },
     {
@@ -1956,6 +1957,26 @@ export default function AdminDashboard() {
                 </button>
               </div>
 
+              {/* Search Bar */}
+              <div className="bg-white border border-slate-200 px-4 py-3 rounded-2xl shadow-sm flex items-center gap-3">
+                <Search className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Search invoice by unique ID (e.g. INV-2026-001) or customer name..."
+                  value={invoiceSearchQuery}
+                  onChange={(e) => setInvoiceSearchQuery(e.target.value)}
+                  className="w-full bg-transparent border-none text-slate-800 focus:outline-none focus:ring-0 placeholder-slate-400 text-xs py-1"
+                />
+                {invoiceSearchQuery && (
+                  <button
+                    onClick={() => setInvoiceSearchQuery('')}
+                    className="text-slate-400 hover:text-slate-600 text-xs font-bold px-2"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
               {/* Invoices List Table */}
               <div className="overflow-x-auto border border-slate-200 rounded-2xl bg-white shadow-sm">
                 <table className="w-full text-left text-xs border-collapse">
@@ -1978,6 +1999,11 @@ export default function AdminDashboard() {
                         if (activeSubSection === 'Overdue Invoices') return inv.status === 'Overdue';
                         if (activeSubSection === 'Recurring Invoices') return inv.status === 'Paid'; // Mock recurrence
                         return true;
+                      })
+                      .filter(inv => {
+                        if (!invoiceSearchQuery) return true;
+                        const query = invoiceSearchQuery.toLowerCase();
+                        return inv.id.toLowerCase().includes(query) || inv.customer.toLowerCase().includes(query);
                       })
                       .map((inv) => (
                         <tr key={inv.id} className="hover:bg-slate-50/50 transition-colors">
