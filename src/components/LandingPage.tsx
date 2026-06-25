@@ -531,9 +531,19 @@ export default function LandingPage() {
     }
   ], []);
 
-  // Random array shuffler function
+  // Helper to get deterministic score based on product properties to avoid hydration mismatch
+  const getProductDeterministicScore = (product: Product) => {
+    let hash = 0;
+    const str = product.id + product.title;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return hash;
+  };
+
+  // Deterministic array shuffler function
   const shuffledProducts = useMemo(() => {
-    return [...productsDataset].sort(() => 0.5 - Math.random());
+    return [...productsDataset].sort((a, b) => getProductDeterministicScore(a) - getProductDeterministicScore(b));
   }, [productsDataset]);
 
   // Filtered products list based on selections with randomized fallback
@@ -547,8 +557,8 @@ export default function LandingPage() {
         product.category.toLowerCase().includes(searchQuery.toLowerCase());
       return matchBrand && matchPrice && matchRating && matchSearch;
     });
-    // Shuffle the final list for randomized shop display as requested
-    const shuffled = [...list].sort(() => 0.5 - Math.random());
+    // Shuffle the final list deterministically for randomized shop display as requested
+    const shuffled = [...list].sort((a, b) => getProductDeterministicScore(a) - getProductDeterministicScore(b));
 
     if (shopSortOrder === 'low-high') return shuffled.sort((a, b) => a.price - b.price);
     if (shopSortOrder === 'high-low') return shuffled.sort((a, b) => b.price - a.price);
@@ -566,8 +576,8 @@ export default function LandingPage() {
       const matchRating = product.rating >= shopFilterRating;
       return matchCategory && matchBrand && matchPrice && matchRating;
     });
-    // Shuffle lists for dynamic catalog feel
-    const shuffled = [...list].sort(() => 0.5 - Math.random());
+    // Shuffle lists deterministically for dynamic catalog feel
+    const shuffled = [...list].sort((a, b) => getProductDeterministicScore(a) - getProductDeterministicScore(b));
     if (shopSortOrder === 'low-high') return shuffled.sort((a, b) => a.price - b.price);
     if (shopSortOrder === 'high-low') return shuffled.sort((a, b) => b.price - a.price);
     if (shopSortOrder === 'rating') return shuffled.sort((a, b) => b.rating - a.rating);

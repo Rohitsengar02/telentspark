@@ -30,6 +30,7 @@ export interface InventoryItem {
   price: number;
   batch: string;
   expiry: string;
+  discount?: number; // discount percentage
 }
 
 export interface Warehouse {
@@ -90,6 +91,7 @@ interface AppState {
   inventory: InventoryItem[];
   updateInventoryStock: (id: string, newStock: number) => void;
   addInventoryItem: (item: Omit<InventoryItem, 'id'>) => void;
+  updateProductDiscount: (id: string, discount: number) => void;
   
   warehouses: Warehouse[];
   
@@ -121,11 +123,11 @@ const initialLeads: CRMLead[] = [
 ];
 
 const initialInventory: InventoryItem[] = [
-  { id: 'PROD-001', name: 'Premium Grade Silica', sku: 'SIL-PREM-50', category: 'Chemicals', gst: 18, stock: 1200, reserved: 350, price: 450, batch: 'B-SIL23', expiry: '2028-12-31' },
-  { id: 'PROD-002', name: 'High-Density Polymer Beads', sku: 'POLY-HD-100', category: 'Plastics', gst: 18, stock: 850, reserved: 120, price: 620, batch: 'B-POL99', expiry: '2029-06-15' },
-  { id: 'PROD-003', name: 'Pure Stearic Acid Powder', sku: 'STE-ACID-25', category: 'Chemicals', gst: 12, stock: 2450, reserved: 800, price: 180, batch: 'B-STE45', expiry: '2027-10-20' },
-  { id: 'PROD-004', name: 'Industrial Ethanol 99%', sku: 'ETH-IND-200', category: 'Solvents', gst: 18, stock: 4500, reserved: 1500, price: 340, batch: 'B-ETH11', expiry: '2030-01-01' },
-  { id: 'PROD-005', name: 'Almond Carrier Oil Extra', sku: 'OIL-ALM-10', category: 'Organics', gst: 5, stock: 320, reserved: 50, price: 1250, batch: 'B-OIL55', expiry: '2027-04-12' },
+  { id: 'PROD-001', name: 'Premium Grade Silica', sku: 'SIL-PREM-50', category: 'Chemicals', gst: 18, stock: 1200, reserved: 350, price: 450, batch: 'B-SIL23', expiry: '2028-12-31', discount: 10 },
+  { id: 'PROD-002', name: 'High-Density Polymer Beads', sku: 'POLY-HD-100', category: 'Plastics', gst: 18, stock: 850, reserved: 120, price: 620, batch: 'B-POL99', expiry: '2029-06-15', discount: 5 },
+  { id: 'PROD-003', name: 'Pure Stearic Acid Powder', sku: 'STE-ACID-25', category: 'Chemicals', gst: 12, stock: 2450, reserved: 800, price: 180, batch: 'B-STE45', expiry: '2027-10-20', discount: 12 },
+  { id: 'PROD-004', name: 'Industrial Ethanol 99%', sku: 'ETH-IND-200', category: 'Solvents', gst: 18, stock: 4500, reserved: 1500, price: 340, batch: 'B-ETH11', expiry: '2030-01-01', discount: 8 },
+  { id: 'PROD-005', name: 'Almond Carrier Oil Extra', sku: 'OIL-ALM-10', category: 'Organics', gst: 5, stock: 320, reserved: 50, price: 1250, batch: 'B-OIL55', expiry: '2027-04-12', discount: 15 },
 ];
 
 const initialWarehouses: Warehouse[] = [
@@ -178,7 +180,7 @@ const initialActivities: ActivityFeed[] = [
   { id: 'ACT-002', type: 'invoice', message: 'Invoice Generated for ORD-8942', timestamp: '5 mins ago' },
   { id: 'ACT-003', type: 'payment', message: 'Payment Success from Alpha Traders (₹4,89,000)', timestamp: '12 mins ago' },
   { id: 'ACT-004', type: 'vendor', message: 'Vendor Apex Chem Co updated dispatch status to "Dispatched"', timestamp: '24 mins ago' },
-  { id: 'ACT-005', type: 'return', message: 'Return Request received for batch B-SIL23 (damaged packaging)', timestamp: '1 hour ago' },
+  { id: 'ACT-05', type: 'return', message: 'Return Request received for batch B-SIL23 (damaged packaging)', timestamp: '1 hour ago' },
 ];
 
 const initialChatMessages: ChatMessage[] = [
@@ -226,7 +228,7 @@ export const useAppState = create<AppState>((set) => ({
     crmLeads: state.crmLeads.map((l) => l.id === id ? { ...l, stage } : l)
   })),
   addLead: (lead) => set((state) => ({
-    crmLeads: [{ ...lead, id: `LD-${Math.floor(106 + Math.random() * 100)}` }, ...state.crmLeads]
+    crmLeads: [{ ...lead, id: `LD-${Math.floor(106 + Math.random() * 105)}` }, ...state.crmLeads]
   })),
   
   inventory: initialInventory,
@@ -235,6 +237,9 @@ export const useAppState = create<AppState>((set) => ({
   })),
   addInventoryItem: (item) => set((state) => ({
     inventory: [{ ...item, id: `PROD-${Math.floor(100 + Math.random() * 900)}` }, ...state.inventory]
+  })),
+  updateProductDiscount: (id, discount) => set((state) => ({
+    inventory: state.inventory.map((item) => item.id === id ? { ...item, discount } : item)
   })),
   
   warehouses: initialWarehouses,

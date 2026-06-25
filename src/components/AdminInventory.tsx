@@ -46,7 +46,6 @@ export default function AdminInventory() {
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [poNumber, setPoNumber] = useState('PO-2026-9840');
   const [taxType, setTaxType] = useState<'GST' | 'IGST'>('GST'); // GST = CGST+SGST, IGST = Interstate GST
-  const [discountPercent, setDiscountPercent] = useState(5);
   const [paymentTerms, setPaymentTerms] = useState('Net 30 Days');
 
   // Modal State for adding new products
@@ -150,22 +149,25 @@ export default function AdminInventory() {
   const getTotals = () => {
     let subtotal = 0;
     let totalGstAmount = 0;
+    let discountAmount = 0;
     let cgst = 0;
     let sgst = 0;
     let igst = 0;
 
     draftItems.forEach(item => {
       const lineCost = item.quantity * item.customPrice;
-      const lineGst = (lineCost * item.product.gst) / 100;
+      const itemDiscountPercent = item.product.discount || 0;
+      const itemDiscount = (lineCost * itemDiscountPercent) / 100;
+      const lineTaxable = lineCost - itemDiscount;
+      const lineGst = (lineTaxable * item.product.gst) / 100;
+
       subtotal += lineCost;
+      discountAmount += itemDiscount;
       totalGstAmount += lineGst;
     });
 
-    const discountAmount = (subtotal * discountPercent) / 100;
     const taxableSubtotal = subtotal - discountAmount;
-    
-    // Recalculating GST after discount proportionally
-    const finalGstAmount = (taxableSubtotal * (totalGstAmount / (subtotal || 1)));
+    const finalGstAmount = totalGstAmount;
 
     if (taxType === 'GST') {
       cgst = finalGstAmount / 2;
@@ -447,18 +449,24 @@ export default function AdminInventory() {
             <tbody>
               ${draftItems.map(item => {
                 const lineVal = item.quantity * item.customPrice;
-                const lineTax = (lineVal * item.product.gst) / 100;
+                const itemDiscountPercent = item.product.discount || 0;
+                const itemDiscount = (lineVal * itemDiscountPercent) / 100;
+                const lineTaxable = lineVal - itemDiscount;
+                const lineTax = (lineTaxable * item.product.gst) / 100;
                 return `
                   <tr>
                     <td>
                       <div class="product-name">${item.product.name}</div>
-                      <div class="product-meta">SKU: ${item.product.sku} • Batch: ${item.product.batch}</div>
+                      <div class="product-meta">
+                        SKU: ${item.product.sku} • Batch: ${item.product.batch}
+                        ${itemDiscountPercent > 0 ? ` • Disc: ${itemDiscountPercent}%` : ''}
+                      </div>
                     </td>
                     <td class="text-right">₹${item.customPrice.toLocaleString('en-IN')}</td>
                     <td class="text-right">${item.quantity}</td>
                     <td class="text-right">${item.product.gst}%</td>
                     <td class="text-right">₹${lineTax.toLocaleString('en-IN')}</td>
-                    <td class="text-right">₹${(lineVal + lineTax).toLocaleString('en-IN')}</td>
+                    <td class="text-right">₹${(lineTaxable + lineTax).toLocaleString('en-IN')}</td>
                   </tr>
                 `;
               }).join('')}
@@ -483,9 +491,9 @@ export default function AdminInventory() {
                     <td>Subtotal (Gross):</td>
                     <td class="amount">₹${totals.subtotal.toLocaleString('en-IN')}</td>
                   </tr>
-                  ${discountPercent > 0 ? `
+                  ${totals.discountAmount > 0 ? `
                   <tr>
-                    <td>Discount (${discountPercent}%):</td>
+                    <td>Discount (Admin Managed):</td>
                     <td class="amount" style="color: #ef4444;">-₹${totals.discountAmount.toLocaleString('en-IN')}</td>
                   </tr>
                   <tr>
@@ -745,7 +753,14 @@ export default function AdminInventory() {
                         <div className="flex justify-between items-start">
                           <div>
                             <p className="font-bold text-slate-800 truncate max-w-[200px]">{item.product.name}</p>
-                            <p className="text-[9px] text-slate-400 font-semibold font-mono">{item.product.sku}</p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-[9px] text-slate-440 font-semibold font-mono">{item.product.sku}</span>
+                              {item.product.discount ? (
+                                <span className="text-[8px] bg-red-50 text-red-650 px-1 py-0.2 rounded font-bold font-sans">
+                                  {item.product.discount}% Discount
+                                </span>
+                              ) : null}
+                            </div>
                           </div>
                           <button
                             onClick={() => removeFromInvoice(item.product.id)}
@@ -754,7 +769,7 @@ export default function AdminInventory() {
                             <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
-
+ 
                         <div className="grid grid-cols-3 gap-2">
                           <div className="space-y-0.5">
                             <span className="text-[8px] uppercase text-slate-400 font-bold">Unit Price</span>
@@ -778,16 +793,25 @@ export default function AdminInventory() {
                           </div>
                           <div className="text-right flex flex-col justify-end">
                             <span className="text-[8px] uppercase text-slate-400 font-bold">Line Total</span>
-                            <p className="font-black text-slate-850 py-0.5">₹{(item.quantity * item.customPrice).toLocaleString('en-IN')}</p>
+                            {item.product.discount ? (
+                              <>
+                                <span className="text-[9px] line-through text-slate-400 font-medium">₹{(item.quantity * item.customPrice).toLocaleString('en-IN')}</span>
+                                <p className="font-black text-slate-850">
+                                  ₹{((item.quantity * item.customPrice) * (1 - item.product.discount / 100)).toLocaleString('en-IN')}
+                                </p>
+                              </>
+                            ) : (
+                              <p className="font-black text-slate-850 py-0.5">₹{(item.quantity * item.customPrice).toLocaleString('en-IN')}</p>
+                            )}
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
-
+ 
                 {/* Additional Settings */}
-                <div className="grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 text-xs">
+                <div className="border-t border-slate-100 pt-3 text-xs">
                   <div className="space-y-1">
                     <label className="font-bold text-slate-500 uppercase text-[9px]">Tax Allocation</label>
                     <select
@@ -799,31 +823,17 @@ export default function AdminInventory() {
                       <option value="IGST">IGST (Interstate)</option>
                     </select>
                   </div>
-                  <div className="space-y-1">
-                    <label className="font-bold text-slate-500 uppercase text-[9px] flex justify-between">
-                      <span>Discount</span>
-                      <span className="text-primary font-black">{discountPercent}%</span>
-                    </label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="20"
-                      value={discountPercent}
-                      onChange={(e) => setDiscountPercent(parseInt(e.target.value))}
-                      className="w-full accent-primary h-1.5 bg-slate-100 rounded-lg cursor-pointer"
-                    />
-                  </div>
                 </div>
-
+ 
                 {/* Calculation Summary Ledger */}
                 <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2 text-xs">
                   <div className="flex justify-between font-medium text-slate-600">
                     <span>Gross Subtotal:</span>
                     <span>₹{totals.subtotal.toLocaleString('en-IN')}</span>
                   </div>
-                  {discountPercent > 0 && (
+                  {totals.discountAmount > 0 && (
                     <div className="flex justify-between font-medium text-red-500">
-                      <span>Discount ({discountPercent}%):</span>
+                      <span>Discount (Admin Managed):</span>
                       <span>-₹{totals.discountAmount.toLocaleString('en-IN')}</span>
                     </div>
                   )}
@@ -1112,9 +1122,9 @@ export default function AdminInventory() {
                           <td className="pb-1 text-slate-500">Gross Subtotal:</td>
                           <td className="pb-1 font-bold">₹{totals.subtotal.toLocaleString('en-IN')}</td>
                         </tr>
-                        {discountPercent > 0 && (
+                        {totals.discountAmount > 0 && (
                           <tr>
-                            <td className="pb-1 text-red-500">Discount ({discountPercent}%):</td>
+                            <td className="pb-1 text-red-500">Discount (Admin Managed):</td>
                             <td className="pb-1 font-bold text-red-500">-₹{totals.discountAmount.toLocaleString('en-IN')}</td>
                           </tr>
                         )}

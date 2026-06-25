@@ -1,7 +1,23 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAppState, CRMLead, Order, InventoryItem, Warehouse } from '@/store/state';
+import {
+  ResponsiveContainer,
+  BarChart as RechartsBarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  LineChart as RechartsLineChart,
+  Line,
+  PieChart as RechartsPieChart,
+  Pie,
+  Cell,
+  AreaChart as RechartsAreaChart,
+  Area
+} from 'recharts';
 import {
   TrendingUp,
   Users,
@@ -76,6 +92,7 @@ export default function AdminDashboard() {
     inventory,
     addInventoryItem,
     updateInventoryStock,
+    updateProductDiscount,
     warehouses,
     activities,
     addActivity,
@@ -488,6 +505,84 @@ export default function AdminDashboard() {
   const [aiGeneratedText, setAiGeneratedText] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
 
+  // Filter states for Product Intelligence
+  const [intelDateRange, setIntelDateRange] = useState('30days');
+  const [intelCategory, setIntelCategory] = useState('All');
+  const [intelBrand, setIntelBrand] = useState('All');
+  const [intelRegion, setIntelRegion] = useState('All');
+  const [intelExecutive, setIntelExecutive] = useState('All');
+
+  // Product Intelligence Dataset of 30 items
+  const productIntelligenceData = useMemo(() => {
+    return [
+      // Category: Industrial Chemicals (10 items)
+      { id: '1', sku: 'TS-ETH-99', category: 'Industrial Chemicals', name: 'Ethanol 99%', brand: 'Talentspark Chem', purchasePrice: 400, sellingPrice: 700, stock: 8, reorderLevel: 100, unitsSold: 450, revenue: 315000, demandScore: 95, salesVelocity: 15.0, lastSale: '2026-06-25', region: 'North India', supplier: 'Punjab Chemical Corp', rating: 5, status: '🔥 Fast Seller', growth: 34, leads: 150, quotes: 80, repeatOrders: 45, interest: 95, exec: 'Amit Sharma' },
+      { id: '2', sku: 'TS-IPA-100', category: 'Industrial Chemicals', name: 'Isopropyl Alcohol', brand: 'IPA India', purchasePrice: 500, sellingPrice: 700, stock: 40, reorderLevel: 100, unitsSold: 420, revenue: 294000, demandScore: 92, salesVelocity: 14.0, lastSale: '2026-06-25', region: 'West India', supplier: 'Gujarat Petrochem', rating: 5, status: '🔥 Fast Seller', growth: 18, leads: 120, quotes: 60, repeatOrders: 30, interest: 85, exec: 'Neha Gupta' },
+      { id: '3', sku: 'TS-ACE-02', category: 'Industrial Chemicals', name: 'Acetone', brand: 'Talentspark Chem', purchasePrice: 500, sellingPrice: 700, stock: 55, reorderLevel: 80, unitsSold: 300, revenue: 210000, demandScore: 88, salesVelocity: 10.0, lastSale: '2026-06-24', region: 'North India', supplier: 'Punjab Chemical Corp', rating: 5, status: '🔥 Fast Seller', growth: 45, leads: 220, quotes: 30, repeatOrders: 60, interest: 99, exec: 'Amit Sharma' },
+      { id: '4', sku: 'TS-STR-01', category: 'Industrial Chemicals', name: 'Stearic Acid', brand: 'Talentspark Chem', purchasePrice: 150, sellingPrice: 250, stock: 60, reorderLevel: 50, unitsSold: 210, revenue: 52500, demandScore: 78, salesVelocity: 7.0, lastSale: '2026-06-25', region: 'West India', supplier: 'Gujarat Petrochem', rating: 4, status: '🔥 Fast Seller', growth: 12, leads: 90, quotes: 45, repeatOrders: 20, interest: 70, exec: 'Neha Gupta' },
+      { id: '5', sku: 'TS-CIT-001', category: 'Industrial Chemicals', name: 'Citric Acid', brand: 'CitraGlobal', purchasePrice: 280, sellingPrice: 400, stock: 12, reorderLevel: 80, unitsSold: 390, revenue: 156000, demandScore: 90, salesVelocity: 13.0, lastSale: '2026-06-25', region: 'West India', supplier: 'Apex Food Ingredients', rating: 5, status: '🔥 Fast Seller', growth: 22, leads: 110, quotes: 50, repeatOrders: 25, interest: 80, exec: 'Neha Gupta' },
+      { id: '6', sku: 'TS-SUL-01', category: 'Industrial Chemicals', name: 'Sulphuric Acid', brand: 'SodaCorp', purchasePrice: 180, sellingPrice: 300, stock: 35, reorderLevel: 50, unitsSold: 240, revenue: 72000, demandScore: 82, salesVelocity: 8.0, lastSale: '2026-06-24', region: 'East India', supplier: 'Assam Petrochemicals', rating: 4, status: '🔥 Fast Seller', growth: 16, leads: 85, quotes: 40, repeatOrders: 15, interest: 60, exec: 'Vikram Rathore' },
+      { id: '7', sku: 'TS-SODA-01', category: 'Industrial Chemicals', name: 'Caustic Soda', brand: 'SodaCorp', purchasePrice: 250, sellingPrice: 400, stock: 25, reorderLevel: 80, unitsSold: 330, revenue: 132000, demandScore: 86, salesVelocity: 11.0, lastSale: '2026-06-25', region: 'West India', supplier: 'Gujarat Alkalies', rating: 4, status: '🔥 Fast Seller', growth: 40, leads: 180, quotes: 85, repeatOrders: 40, interest: 92, exec: 'Shalini Sen' },
+      { id: '8', sku: 'TS-H2O2-09', category: 'Industrial Chemicals', name: 'Hydrogen Peroxide', brand: 'SodaCorp', purchasePrice: 480, sellingPrice: 700, stock: 30, reorderLevel: 60, unitsSold: 230, revenue: 161000, demandScore: 80, salesVelocity: 7.6, lastSale: '2026-06-25', region: 'East India', supplier: 'Assam Petrochemicals', rating: 4, status: '🔥 Fast Seller', growth: 15, leads: 70, quotes: 10, repeatOrders: 15, interest: 50, exec: 'Vikram Rathore' },
+      { id: '9', sku: 'TS-GLY-01', category: 'Industrial Chemicals', name: 'Glycerin', brand: 'Talentspark Chem', purchasePrice: 200, sellingPrice: 350, stock: 45, reorderLevel: 40, unitsSold: 180, revenue: 63000, demandScore: 75, salesVelocity: 6.0, lastSale: '2026-06-23', region: 'South India', supplier: 'Chennai Works', rating: 4, status: '🔥 Fast Seller', growth: 8, leads: 65, quotes: 30, repeatOrders: 10, interest: 55, exec: 'Rohan Verma' },
+      { id: '10', sku: 'TS-MET-01', category: 'Industrial Chemicals', name: 'Methanol', brand: 'Talentspark Chem', purchasePrice: 150, sellingPrice: 250, stock: 50, reorderLevel: 60, unitsSold: 200, revenue: 50000, demandScore: 77, salesVelocity: 6.6, lastSale: '2026-06-22', region: 'North India', supplier: 'Punjab Chemical Corp', rating: 4, status: '🔥 Fast Seller', growth: 10, leads: 70, quotes: 35, repeatOrders: 12, interest: 58, exec: 'Amit Sharma' },
+
+      // Category: Laboratory Chemicals (8 items)
+      { id: '11', sku: 'TS-SACL-03', category: 'Laboratory Chemicals', name: 'Sodium Chloride', brand: 'LabEssentials', purchasePrice: 130, sellingPrice: 200, stock: 65, reorderLevel: 90, unitsSold: 290, revenue: 58000, demandScore: 84, salesVelocity: 9.6, lastSale: '2026-06-25', region: 'South India', supplier: 'Tata Chemicals Ltd', rating: 4, status: '🔥 Fast Seller', growth: 5, leads: 130, quotes: 65, repeatOrders: 20, interest: 75, exec: 'Rohan Verma' },
+      { id: '12', sku: 'TS-KNO3', category: 'Laboratory Chemicals', name: 'Potassium Nitrate', brand: 'LabEssentials', purchasePrice: 600, sellingPrice: 800, stock: 130, reorderLevel: 15, unitsSold: 16, revenue: 12800, demandScore: 32, salesVelocity: 0.5, lastSale: '2026-06-11', region: 'East India', supplier: 'Kolkata Chemicals', rating: 4, status: '⚠ Slow Moving', growth: -6, leads: 14, quotes: 4, repeatOrders: 1, interest: 10, exec: 'Vikram Rathore' },
+      { id: '13', sku: 'TS-AGNO3', category: 'Laboratory Chemicals', name: 'Silver Nitrate', brand: 'LabEssentials', purchasePrice: 2000, sellingPrice: 2500, stock: 300, reorderLevel: 10, unitsSold: 15, revenue: 37500, demandScore: 25, salesVelocity: 0.5, lastSale: '2026-06-10', region: 'West India', supplier: 'Gujarat Petrochem', rating: 4, status: '⚠ Slow Moving', growth: -28, leads: 12, quotes: 8, repeatOrders: 2, interest: 15, exec: 'Neha Gupta' },
+      { id: '14', sku: 'TS-HCL-01', category: 'Laboratory Chemicals', name: 'Hydrochloric Acid', brand: 'LabEssentials', purchasePrice: 100, sellingPrice: 180, stock: 80, reorderLevel: 30, unitsSold: 160, revenue: 28800, demandScore: 68, salesVelocity: 5.3, lastSale: '2026-06-24', region: 'North India', supplier: 'Delhi Chemical Hub', rating: 4, status: 'Normal', growth: 5, leads: 45, quotes: 20, repeatOrders: 10, interest: 40, exec: 'Amit Sharma' },
+      { id: '15', sku: 'TS-NH4CL', category: 'Laboratory Chemicals', name: 'Ammonium Chloride', brand: 'LabEssentials', purchasePrice: 400, sellingPrice: 500, stock: 140, reorderLevel: 20, unitsSold: 30, revenue: 15000, demandScore: 38, salesVelocity: 1.0, lastSale: '2026-06-20', region: 'North India', supplier: 'Delhi Chemical Hub', rating: 4, status: '⚠ Slow Moving', growth: 2, leads: 28, quotes: 12, repeatOrders: 4, interest: 25, exec: 'Amit Sharma' },
+      { id: '16', sku: 'TS-BORIC', category: 'Laboratory Chemicals', name: 'Boric Acid', brand: 'LabEssentials', purchasePrice: 400, sellingPrice: 500, stock: 150, reorderLevel: 15, unitsSold: 20, revenue: 10000, demandScore: 30, salesVelocity: 0.7, lastSale: '2026-06-15', region: 'South India', supplier: 'Tata Chemicals Ltd', rating: 3, status: '⚠ Slow Moving', growth: -8, leads: 18, quotes: 5, repeatOrders: 1, interest: 12, exec: 'Rohan Verma' },
+      { id: '17', sku: 'TS-COP-01', category: 'Laboratory Chemicals', name: 'Copper Sulphate', brand: 'LabEssentials', purchasePrice: 350, sellingPrice: 500, stock: 120, reorderLevel: 25, unitsSold: 22, revenue: 11000, demandScore: 35, salesVelocity: 0.7, lastSale: '2026-06-14', region: 'East India', supplier: 'Kolkata Chemicals', rating: 4, status: '⚠ Slow Moving', growth: -4, leads: 20, quotes: 8, repeatOrders: 2, interest: 15, exec: 'Vikram Rathore' },
+      { id: '18', sku: 'TS-ZNO', category: 'Laboratory Chemicals', name: 'Zinc Oxide', brand: 'LabEssentials', purchasePrice: 400, sellingPrice: 500, stock: 110, reorderLevel: 20, unitsSold: 22, revenue: 11000, demandScore: 36, salesVelocity: 0.7, lastSale: '2026-06-15', region: 'West India', supplier: 'Gujarat Petrochem', rating: 4, status: '⚠ Slow Moving', growth: -4, leads: 25, quotes: 9, repeatOrders: 2, interest: 18, exec: 'Neha Gupta' },
+
+      // Category: Pharmaceuticals Raw Materials (7 items)
+      { id: '19', sku: 'TS-LACT-05', category: 'Pharmaceuticals Raw Materials', name: 'Lactose Monohydrate', brand: 'PharmaGrade', purchasePrice: 550, sellingPrice: 800, stock: 85, reorderLevel: 90, unitsSold: 270, revenue: 216000, demandScore: 88, salesVelocity: 9.0, lastSale: '2026-06-25', region: 'West India', supplier: 'Sun Pharma Sourcing', rating: 5, status: '🔥 Fast Seller', growth: 25, leads: 105, quotes: 40, repeatOrders: 35, interest: 80, exec: 'Neha Gupta' },
+      { id: '20', sku: 'TS-MCC-01', category: 'Pharmaceuticals Raw Materials', name: 'Microcrystalline Cellulose', brand: 'PharmaGrade', purchasePrice: 450, sellingPrice: 600, stock: 95, reorderLevel: 50, unitsSold: 150, revenue: 90000, demandScore: 76, salesVelocity: 5.0, lastSale: '2026-06-25', region: 'West India', supplier: 'Sun Pharma Sourcing', rating: 4, status: 'Normal', growth: 22, leads: 82, quotes: 35, repeatOrders: 15, interest: 60, exec: 'Neha Gupta' },
+      { id: '21', sku: 'TS-MST-01', category: 'Pharmaceuticals Raw Materials', name: 'Magnesium Stearate', brand: 'PharmaGrade', purchasePrice: 300, sellingPrice: 450, stock: 110, reorderLevel: 40, unitsSold: 140, revenue: 63000, demandScore: 74, salesVelocity: 4.6, lastSale: '2026-06-25', region: 'West India', supplier: 'Sun Pharma Sourcing', rating: 4, status: 'Normal', growth: 12, leads: 70, quotes: 28, repeatOrders: 11, interest: 52, exec: 'Neha Gupta' },
+      { id: '22', sku: 'TS-POV-30', category: 'Pharmaceuticals Raw Materials', name: 'Povidone K30', brand: 'PharmaGrade', purchasePrice: 800, sellingPrice: 1200, stock: 40, reorderLevel: 20, unitsSold: 85, revenue: 102000, demandScore: 68, salesVelocity: 2.8, lastSale: '2026-06-24', region: 'North India', supplier: 'Delhi Pharma Labs', rating: 4, status: 'Normal', growth: 15, leads: 40, quotes: 15, repeatOrders: 5, interest: 35, exec: 'Amit Sharma' },
+      { id: '23', sku: 'TS-TALC-10', category: 'Pharmaceuticals Raw Materials', name: 'Talc Powder', brand: 'PharmaGrade', purchasePrice: 180, sellingPrice: 300, stock: 130, reorderLevel: 50, unitsSold: 220, revenue: 66000, demandScore: 82, salesVelocity: 7.3, lastSale: '2026-06-25', region: 'South India', supplier: 'Hyderabad Minerals', rating: 4, status: '🔥 Fast Seller', growth: 4, leads: 60, quotes: 30, repeatOrders: 8, interest: 55, exec: 'Rohan Verma' },
+      { id: '24', sku: 'TS-CALC-08', category: 'Pharmaceuticals Raw Materials', name: 'Calcium Carbonate', brand: 'PharmaGrade', purchasePrice: 380, sellingPrice: 500, stock: 70, reorderLevel: 80, unitsSold: 240, revenue: 120000, demandScore: 81, salesVelocity: 8.0, lastSale: '2026-06-25', region: 'North India', supplier: 'Delhi Pharma Labs', rating: 4, status: '🔥 Fast Seller', growth: -12, leads: 35, quotes: 20, repeatOrders: 2, interest: 30, exec: 'Amit Sharma' },
+      { id: '25', sku: 'TS-GEL-01', category: 'Pharmaceuticals Raw Materials', name: 'Gelatin Powder', brand: 'PharmaGrade', purchasePrice: 600, sellingPrice: 900, stock: 45, reorderLevel: 30, unitsSold: 90, revenue: 81000, demandScore: 70, salesVelocity: 3.0, lastSale: '2026-06-22', region: 'South India', supplier: 'Hyderabad Minerals', rating: 4, status: 'Normal', growth: 8, leads: 38, quotes: 12, repeatOrders: 6, interest: 32, exec: 'Rohan Verma' },
+
+      // Category: Food Ingredients (7 items)
+      { id: '26', sku: 'TS-CITFG-04', category: 'Food Ingredients', name: 'Citric Acid Food Grade', brand: 'CitraGlobal', purchasePrice: 300, sellingPrice: 400, stock: 45, reorderLevel: 70, unitsSold: 280, revenue: 112000, demandScore: 82, salesVelocity: 9.3, lastSale: '2026-06-25', region: 'West India', supplier: 'Apex Food Ingredients', rating: 4, status: '🔥 Fast Seller', growth: -5, leads: 40, quotes: 25, repeatOrders: 10, interest: 35, exec: 'Neha Gupta' },
+      { id: '27', sku: 'TS-XAN-01', category: 'Food Ingredients', name: 'Xanthan Gum', brand: 'CitraGlobal', purchasePrice: 300, sellingPrice: 400, stock: 85, reorderLevel: 30, unitsSold: 120, revenue: 48000, demandScore: 89, salesVelocity: 4.0, lastSale: '2026-06-25', region: 'West India', supplier: 'Apex Food Ingredients', rating: 5, status: 'Normal', growth: 32, leads: 92, quotes: 45, repeatOrders: 20, interest: 70, exec: 'Neha Gupta' },
+      { id: '28', sku: 'TS-SBE-01', category: 'Food Ingredients', name: 'Sodium Benzoate', brand: 'CitraGlobal', purchasePrice: 200, sellingPrice: 300, stock: 120, reorderLevel: 40, unitsSold: 130, revenue: 39000, demandScore: 72, salesVelocity: 4.3, lastSale: '2026-06-25', region: 'West India', supplier: 'Apex Food Ingredients', rating: 4, status: 'Normal', growth: 18, leads: 75, quotes: 30, repeatOrders: 12, interest: 58, exec: 'Neha Gupta' },
+      { id: '29', sku: 'TS-KSO-01', category: 'Food Ingredients', name: 'Potassium Sorbate', brand: 'CitraGlobal', purchasePrice: 300, sellingPrice: 400, stock: 90, reorderLevel: 30, unitsSold: 110, revenue: 44000, demandScore: 88, salesVelocity: 3.6, lastSale: '2026-06-24', region: 'South India', supplier: 'Apex Food Ingredients', rating: 4, status: 'Normal', growth: 14, leads: 89, quotes: 40, repeatOrders: 18, interest: 68, exec: 'Rohan Verma' },
+      { id: '30', sku: 'TS-MAL-01', category: 'Food Ingredients', name: 'Maltodextrin', brand: 'CitraGlobal', purchasePrice: 180, sellingPrice: 280, stock: 110, reorderLevel: 40, unitsSold: 150, revenue: 42000, demandScore: 75, salesVelocity: 5.0, lastSale: '2026-06-23', region: 'North India', supplier: 'Delhi Chemical Hub', rating: 4, status: 'Normal', growth: 10, leads: 50, quotes: 18, repeatOrders: 8, interest: 42, exec: 'Amit Sharma' },
+      { id: '31', sku: 'TS-BAK-01', category: 'Food Ingredients', name: 'Baking Powder', brand: 'CitraGlobal', purchasePrice: 120, sellingPrice: 200, stock: 160, reorderLevel: 50, unitsSold: 170, revenue: 34000, demandScore: 78, salesVelocity: 5.6, lastSale: '2026-06-24', region: 'South India', supplier: 'Chennai Works', rating: 4, status: 'Normal', growth: 6, leads: 55, quotes: 22, repeatOrders: 10, interest: 48, exec: 'Rohan Verma' },
+      { id: '32', sku: 'TS-CORN-01', category: 'Food Ingredients', name: 'Corn Starch', brand: 'CitraGlobal', purchasePrice: 100, sellingPrice: 160, stock: 200, reorderLevel: 60, unitsSold: 190, revenue: 30400, demandScore: 80, salesVelocity: 6.3, lastSale: '2026-06-25', region: 'East India', supplier: 'Kolkata Chemicals', rating: 4, status: 'Normal', growth: 8, leads: 60, quotes: 25, repeatOrders: 12, interest: 50, exec: 'Vikram Rathore' },
+
+      // Category: Packaging Materials (6 items)
+      { id: '33', sku: 'TS-HDP-200', category: 'Packaging Materials', name: 'HDPE Drums', brand: 'PackEnterprise', purchasePrice: 380, sellingPrice: 500, stock: 20, reorderLevel: 50, unitsSold: 350, revenue: 175000, demandScore: 98, salesVelocity: 11.6, lastSale: '2026-06-24', region: 'North India', supplier: 'Ludhiana Plastics Ltd', rating: 4, status: '🔥 Fast Seller', growth: 12, leads: 30, quotes: 95, repeatOrders: 50, interest: 25, exec: 'Amit Sharma' },
+      { id: '34', sku: 'TS-BOT-100', category: 'Packaging Materials', name: 'Chemical Bottles', brand: 'PackEnterprise', purchasePrice: 120, sellingPrice: 200, stock: 35, reorderLevel: 70, unitsSold: 340, revenue: 68000, demandScore: 90, salesVelocity: 11.3, lastSale: '2026-06-25', region: 'South India', supplier: 'Chennai Bottle Works', rating: 4, status: '🔥 Fast Seller', growth: 15, leads: 40, quotes: 70, repeatOrders: 35, interest: 35, exec: 'Rohan Verma' },
+      { id: '35', sku: 'TS-PCON-07', category: 'Packaging Materials', name: 'Plastic Containers', brand: 'PackEnterprise', purchasePrice: 200, sellingPrice: 300, stock: 95, reorderLevel: 70, unitsSold: 260, revenue: 78000, demandScore: 84, salesVelocity: 8.6, lastSale: '2026-06-24', region: 'South India', supplier: 'Chennai Bottle Works', rating: 4, status: '🔥 Fast Seller', growth: 8, leads: 50, quotes: 15, repeatOrders: 10, interest: 45, exec: 'Rohan Verma' },
+      { id: '36', sku: 'TS-BOX-06', category: 'Packaging Materials', name: 'Corrugated Boxes', brand: 'PackEnterprise', purchasePrice: 120, sellingPrice: 200, stock: 110, reorderLevel: 60, unitsSold: 250, revenue: 50000, demandScore: 81, salesVelocity: 8.3, lastSale: '2026-06-23', region: 'East India', supplier: 'Kolkata Box Co', rating: 4, status: '🔥 Fast Seller', growth: 10, leads: 85, quotes: 35, repeatOrders: 15, interest: 65, exec: 'Vikram Rathore' },
+      { id: '37', sku: 'TS-LAB-01', category: 'Packaging Materials', name: 'Labels & Stickers', brand: 'PackEnterprise', purchasePrice: 10, sellingPrice: 20, stock: 1000, reorderLevel: 200, unitsSold: 500, revenue: 10000, demandScore: 75, salesVelocity: 16.6, lastSale: '2026-06-25', region: 'North India', supplier: 'Delhi Printers', rating: 4, status: '🔥 Fast Seller', growth: 5, leads: 30, quotes: 10, repeatOrders: 5, interest: 20, exec: 'Amit Sharma' },
+      { id: '38', sku: 'TS-TAP-01', category: 'Packaging Materials', name: 'Packaging Tapes', brand: 'PackEnterprise', purchasePrice: 30, sellingPrice: 50, stock: 400, reorderLevel: 100, unitsSold: 300, revenue: 15000, demandScore: 70, salesVelocity: 10.0, lastSale: '2026-06-24', region: 'West India', supplier: 'Gujarat Petrochem', rating: 4, status: '🔥 Fast Seller', growth: 8, leads: 25, quotes: 8, repeatOrders: 4, interest: 15, exec: 'Neha Gupta' },
+
+      // Category: Industrial Equipment (6 items)
+      { id: '39', sku: 'TS-PUMP-01', category: 'Industrial Equipment', name: 'Chemical Pumps', brand: 'EquipTech', purchasePrice: 6000, sellingPrice: 8000, stock: 70, reorderLevel: 5, unitsSold: 18, revenue: 144000, demandScore: 35, salesVelocity: 0.6, lastSale: '2026-06-14', region: 'South India', supplier: 'Coimbatore Pump Works', rating: 4, status: '⚠ Slow Moving', growth: -12, leads: 16, quotes: 4, repeatOrders: 1, interest: 15, exec: 'Rohan Verma' },
+      { id: '40', sku: 'TS-SCALE-01', category: 'Industrial Equipment', name: 'Digital Weighing Scale', brand: 'EquipTech', purchasePrice: 3000, sellingPrice: 4500, stock: 45, reorderLevel: 8, unitsSold: 14, revenue: 63000, demandScore: 38, salesVelocity: 0.5, lastSale: '2026-06-12', region: 'North India', supplier: 'Delhi Electronics', rating: 4, status: '⚠ Slow Moving', growth: -5, leads: 18, quotes: 5, repeatOrders: 2, interest: 15, exec: 'Amit Sharma' },
+      { id: '41', sku: 'TS-PH-01', category: 'Industrial Equipment', name: 'pH Meter', brand: 'EquipTech', purchasePrice: 2000, sellingPrice: 2500, stock: 90, reorderLevel: 10, unitsSold: 25, revenue: 62500, demandScore: 36, salesVelocity: 0.8, lastSale: '2026-06-18', region: 'North India', supplier: 'Delhi Electronics', rating: 4, status: '⚠ Slow Moving', growth: -5, leads: 22, quotes: 10, repeatOrders: 3, interest: 20, exec: 'Amit Sharma' },
+      { id: '42', sku: 'TS-FLOW-01', category: 'Industrial Equipment', name: 'Flow Meter', brand: 'EquipTech', purchasePrice: 12000, sellingPrice: 15000, stock: 80, reorderLevel: 5, unitsSold: 12, revenue: 180000, demandScore: 22, salesVelocity: 0.4, lastSale: '2026-06-12', region: 'East India', supplier: 'Kolkata Equipments', rating: 4, status: '⚠ Slow Moving', growth: -18, leads: 15, quotes: 6, repeatOrders: 1, interest: 10, exec: 'Vikram Rathore' },
+      { id: '43', sku: 'TS-MIX-01', category: 'Industrial Equipment', name: 'Industrial Mixers', brand: 'EquipTech', purchasePrice: 25000, sellingPrice: 30000, stock: 15, reorderLevel: 2, unitsSold: 10, revenue: 300000, demandScore: 20, salesVelocity: 0.3, lastSale: '2026-06-08', region: 'West India', supplier: 'Mumbai Heavy Machinery', rating: 4, status: '⚠ Slow Moving', growth: -10, leads: 9, quotes: 3, repeatOrders: 1, interest: 7, exec: 'Neha Gupta' },
+      { id: '44', sku: 'TS-TANK-01', category: 'Industrial Equipment', name: 'Storage Tanks', brand: 'EquipTech', purchasePrice: 40000, sellingPrice: 50000, stock: 20, reorderLevel: 2, unitsSold: 8, revenue: 400000, demandScore: 18, salesVelocity: 0.3, lastSale: '2026-06-05', region: 'North India', supplier: 'Punjab Heavy Engg', rating: 5, status: '⚠ Slow Moving', growth: -15, leads: 8, quotes: 2, repeatOrders: 0, interest: 5, exec: 'Amit Sharma' }
+    ];
+  }, []);
+
+  const filteredIntelData = useMemo(() => {
+    return productIntelligenceData.filter((item: any) => {
+      const matchCat = intelCategory === 'All' || item.category === intelCategory;
+      const matchBrand = intelBrand === 'All' || item.brand === intelBrand;
+      const matchRegion = intelRegion === 'All' || item.region === intelRegion;
+      const matchExec = intelExecutive === 'All' || item.exec === intelExecutive;
+      return matchCat && matchBrand && matchRegion && matchExec;
+    });
+  }, [productIntelligenceData, intelCategory, intelBrand, intelRegion, intelExecutive]);
+
   // Expense states
   const [expenses, setExpenses] = useState([
     { id: 'EXP-001', category: 'Logistics', vendor: 'BlueDart Express', amount: 45000, date: '2026-06-18', status: 'Approved' },
@@ -517,6 +612,19 @@ export default function AdminDashboard() {
         { name: 'Revenue Dashboard' },
         { name: 'Team Performance' },
         { name: 'Daily Activity' }
+      ]
+    },
+    {
+      name: 'Product Intelligence',
+      icon: Package,
+      subsections: [
+        { name: 'Product Overview' },
+        { name: 'Demand Analytics' },
+        { name: 'Sales Velocity' },
+        { name: 'Product Performance' },
+        { name: 'Product Forecasting' },
+        { name: 'Inventory Insights' },
+        { name: 'Product Reports' }
       ]
     },
     {
@@ -1378,6 +1486,1031 @@ export default function AdminDashboard() {
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* PRODUCT DEMAND & SALES INTELLIGENCE MODULE */}
+          {activeSection === 'Product Intelligence' && (
+            <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+              {/* Header with Title and Filters */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div>
+                    <span className="text-[9px] font-black uppercase bg-blue-600 text-white px-2 py-0.5 rounded shadow-sm">
+                      ERP Intel
+                    </span>
+                    <h2 className="text-lg font-black text-slate-900 tracking-tight mt-1">
+                      Product Demand & Sales Intelligence Panel
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      Submenu: <span className="font-extrabold text-blue-600 uppercase">{activeSubSection}</span>
+                    </p>
+                  </div>
+                  
+                  {/* Real-time Data indicator */}
+                  <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 border border-emerald-100 rounded-full text-emerald-700 text-[10px] font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                    Live Sync Enabled
+                  </div>
+                </div>
+
+                {/* Filters Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 pt-2 border-t border-slate-100 text-xs">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-450">Date Range</label>
+                    <select 
+                      value={intelDateRange} 
+                      onChange={(e) => setIntelDateRange(e.target.value)}
+                      className="w-full p-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-800 focus:outline-none"
+                    >
+                      <option value="7days">Last 7 Days</option>
+                      <option value="30days">Last 30 Days</option>
+                      <option value="ytd">Year to Date (YTD)</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-450">Category</label>
+                    <select 
+                      value={intelCategory} 
+                      onChange={(e) => setIntelCategory(e.target.value)}
+                      className="w-full p-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-800 focus:outline-none"
+                    >
+                      <option value="All">All Categories</option>
+                      <option value="Industrial Chemicals">Industrial Chemicals</option>
+                      <option value="Laboratory Chemicals">Laboratory Chemicals</option>
+                      <option value="Pharmaceuticals Raw Materials">Pharmaceuticals Raw Materials</option>
+                      <option value="Food Ingredients">Food Ingredients</option>
+                      <option value="Packaging Materials">Packaging Materials</option>
+                      <option value="Industrial Equipment">Industrial Equipment</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-450">Brand</label>
+                    <select 
+                      value={intelBrand} 
+                      onChange={(e) => setIntelBrand(e.target.value)}
+                      className="w-full p-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-800 focus:outline-none"
+                    >
+                      <option value="All">All Brands</option>
+                      <option value="Talentspark Chem">Talentspark Chem</option>
+                      <option value="IPA India">IPA India</option>
+                      <option value="CitraGlobal">CitraGlobal</option>
+                      <option value="PackEnterprise">PackEnterprise</option>
+                      <option value="SodaCorp">SodaCorp</option>
+                      <option value="LabEssentials">LabEssentials</option>
+                      <option value="PharmaGrade">PharmaGrade</option>
+                      <option value="EquipTech">EquipTech</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-455">Sales Region</label>
+                    <select 
+                      value={intelRegion} 
+                      onChange={(e) => setIntelRegion(e.target.value)}
+                      className="w-full p-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-800 focus:outline-none"
+                    >
+                      <option value="All">All Regions</option>
+                      <option value="North">North India</option>
+                      <option value="South">South Territory</option>
+                      <option value="East">East Territory</option>
+                      <option value="West">Western Region</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-slate-450">Sales Executive</label>
+                    <select 
+                      value={intelExecutive} 
+                      onChange={(e) => setIntelExecutive(e.target.value)}
+                      className="w-full p-2 border border-slate-200 rounded-lg bg-slate-50 text-slate-800 focus:outline-none"
+                    >
+                      <option value="All">All Executives</option>
+                      <option value="Amit Sharma">Amit Sharma</option>
+                      <option value="Neha Gupta">Neha Gupta</option>
+                      <option value="Rohan Verma">Rohan Verma</option>
+                      <option value="Priya Nair">Priya Nair</option>
+                      <option value="Vikram Rathore">Vikram Rathore</option>
+                      <option value="Shalini Sen">Shalini Sen</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* PRODUCT OVERVIEW DASHBOARD */}
+              {activeSubSection === 'Product Overview' && (
+                <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+                  {/* KPI Metrics */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      { label: 'Total Products', value: filteredIntelData.length, desc: 'Active SKU list', color: 'text-blue-600' },
+                      { label: 'Fast Selling Products', value: filteredIntelData.filter((p: any) => p.salesVelocity >= 10).length, desc: 'Velocity >= 10/day', color: 'text-emerald-600' },
+                      { label: 'Slow Moving Products', value: filteredIntelData.filter((p: any) => p.salesVelocity < 4).length, desc: 'Velocity < 4/day', color: 'text-amber-600' },
+                      { label: 'Most Demanded Product', value: filteredIntelData.reduce((max: any, p: any) => (p.leads + p.interest > max.leads + max.interest ? p : max), { name: 'None', leads: 0, interest: 0 }).name, desc: 'Highest Lead Count', color: 'text-violet-600', truncate: true },
+                      { label: 'Lowest Demanded Product', value: filteredIntelData.reduce((min: any, p: any) => (p.leads + p.interest < min.leads + min.interest ? p : min), filteredIntelData[0] || { name: 'None' }).name, desc: 'Lowest Interest', color: 'text-slate-500', truncate: true },
+                      { label: 'Total Product Revenue', value: `₹${filteredIntelData.reduce((sum: number, p: any) => sum + p.revenue, 0).toLocaleString()}`, desc: 'Selected Period Total', color: 'text-rose-600' },
+                      { label: 'Average Product Sales', value: `${(filteredIntelData.reduce((sum: number, p: any) => sum + p.unitsSold, 0) / (filteredIntelData.length || 1)).toFixed(0)} Units`, desc: 'Average Units Sold per SKU', color: 'text-cyan-600' },
+                      { label: 'Inventory Turnover Rate', value: '4.8x', desc: 'Healthy benchmark (4-6x)', color: 'text-indigo-600' }
+                    ].map((kpi, idx) => (
+                      <div key={idx} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between min-h-[105px]">
+                        <div>
+                          <p className="text-[9px] text-slate-455 uppercase font-bold tracking-wider">{kpi.label}</p>
+                          <h4 className={`text-sm md:text-base font-black mt-1.5 ${kpi.color} ${kpi.truncate ? 'truncate max-w-[200px]' : ''}`}>
+                            {kpi.value}
+                          </h4>
+                        </div>
+                        <p className="text-[9px] text-slate-400 mt-1">{kpi.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Fast Selling Products Widget & Slow Selling Products Widget */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Fast Selling Products */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                          <Activity className="h-4.5 w-4.5 text-red-500 animate-pulse" />
+                          Fast Selling Products Widget
+                        </h3>
+                        <span className="text-[9px] font-extrabold text-blue-600 uppercase bg-blue-50 px-2 py-0.5 rounded">
+                          Velocity Profile
+                        </span>
+                      </div>
+
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="border-b border-slate-100 text-slate-400 font-bold">
+                              <th className="py-2.5">Product Name</th>
+                              <th className="py-2.5">Units</th>
+                              <th className="py-2.5">Revenue</th>
+                              <th className="py-2.5">Velocity</th>
+                              <th className="py-2.5">Growth</th>
+                              <th className="py-2.5">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-50 text-slate-700">
+                            {filteredIntelData
+                              .filter((p: any) => p.salesVelocity >= 7)
+                              .sort((a: any, b: any) => b.unitsSold - a.unitsSold)
+                              .slice(0, 5)
+                              .map((p: any) => (
+                                <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
+                                  <td className="py-3 font-bold text-slate-800 truncate max-w-[150px]">{p.name}</td>
+                                  <td className="py-3">{p.unitsSold}</td>
+                                  <td className="py-3">₹{p.revenue.toLocaleString()}</td>
+                                  <td className="py-3 font-bold text-emerald-600">{p.salesVelocity}/d</td>
+                                  <td className="py-3 text-emerald-600 font-extrabold">+{p.growth}%</td>
+                                  <td className="py-3">
+                                    <span className="px-2 py-0.5 bg-red-50 text-red-700 border border-red-100 rounded text-[9px] font-black uppercase">
+                                      🔥 Fast Seller
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Slow Selling Products */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                          <Activity className="h-4.5 w-4.5 text-amber-500" />
+                          Slow Selling Products Widget
+                        </h3>
+                        <span className="text-[9px] font-extrabold text-amber-600 uppercase bg-amber-50 px-2 py-0.5 rounded">
+                          Action Required
+                        </span>
+                      </div>
+
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="border-b border-slate-100 text-slate-400 font-bold">
+                              <th className="py-2.5">Product Name</th>
+                              <th className="py-2.5">Stock</th>
+                              <th className="py-2.5">Units</th>
+                              <th className="py-2.5">Age</th>
+                              <th className="py-2.5">Demand</th>
+                              <th className="py-2.5">Risk Pill</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-50 text-slate-700">
+                            {filteredIntelData
+                              .filter((p: any) => p.salesVelocity < 7)
+                              .sort((a: any, b: any) => a.salesVelocity - b.salesVelocity)
+                              .slice(0, 5)
+                              .map((p: any) => (
+                                <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
+                                  <td className="py-3 font-bold text-slate-800 truncate max-w-[150px]">{p.name}</td>
+                                  <td className="py-3 font-semibold text-slate-700">{p.stock}</td>
+                                  <td className="py-3">{p.unitsSold}</td>
+                                  <td className="py-3">{p.age}d</td>
+                                  <td className="py-3 text-amber-600 font-bold">{p.leads + p.interest}</td>
+                                  <td className="py-3">
+                                    <span className="px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-100 rounded text-[9px] font-black uppercase">
+                                      ⚠ Slow Moving
+                                    </span>
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Recharts Analytics Section */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Top 10 Fast Selling Products */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                      <h4 className="text-[11px] font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <TrendingUp className="h-4 w-4 text-blue-500" />
+                        Top 10 Fast Selling Products (Units Sold)
+                      </h4>
+                      <div className="h-64 w-full text-xs">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RechartsBarChart
+                            data={filteredIntelData
+                              .sort((a, b) => b.unitsSold - a.unitsSold)
+                              .slice(0, 10)}
+                            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                          >
+                            <XAxis dataKey="brand" tick={{ fontSize: 9 }} />
+                            <YAxis tick={{ fontSize: 9 }} />
+                            <Tooltip wrapperStyle={{ fontSize: 10 }} />
+                            <Bar dataKey="unitsSold" fill="#2563EB" radius={[4, 4, 0, 0]} />
+                          </RechartsBarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    {/* Slow Moving Products */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                      <h4 className="text-[11px] font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <Sliders className="h-4 w-4 text-amber-500" />
+                        Slow Moving Products (Sales Velocity Distribution)
+                      </h4>
+                      <div className="h-64 w-full text-xs">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RechartsBarChart
+                            data={filteredIntelData
+                              .sort((a, b) => a.salesVelocity - b.salesVelocity)
+                              .slice(0, 10)}
+                            layout="vertical"
+                            margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                          >
+                            <XAxis type="number" tick={{ fontSize: 9 }} />
+                            <YAxis dataKey="brand" type="category" tick={{ fontSize: 9 }} />
+                            <Tooltip wrapperStyle={{ fontSize: 10 }} />
+                            <Bar dataKey="salesVelocity" fill="#F59E0B" radius={[0, 4, 4, 0]} />
+                          </RechartsBarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* DEMAND ANALYTICS */}
+              {activeSubSection === 'Demand Analytics' && (
+                <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Leaderboard */}
+                    <div className="lg:col-span-1 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                      <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                        Top 10 Most Demanded Leaderboard
+                      </h3>
+                      <div className="space-y-3 text-xs">
+                        {filteredIntelData
+                          .map(p => ({
+                            ...p,
+                            demandScore: p.unitsSold + p.leads + p.quotes + p.repeatOrders + p.interest
+                          }))
+                          .sort((a, b) => b.demandScore - a.demandScore)
+                          .slice(0, 8)
+                          .map((p, idx) => (
+                            <div key={p.id} className="flex justify-between items-center p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                              <div className="flex items-center gap-2">
+                                <span className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] ${
+                                  idx === 0 ? 'bg-amber-100 text-amber-700' : idx === 1 ? 'bg-slate-200 text-slate-700' : 'bg-slate-100 text-slate-500'
+                                }`}>
+                                  {idx + 1}
+                                </span>
+                                <span className="font-extrabold text-slate-800 truncate max-w-[130px]">{p.name}</span>
+                              </div>
+                              <span className="font-black text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-[10px]">
+                                {p.demandScore} pts
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Product Demand Trend */}
+                    <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                      <h4 className="text-[11px] font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                        <TrendingUp className="h-4 w-4 text-violet-500" />
+                        Product Demand Trend (Leads + Quotation Activity)
+                      </h4>
+                      <div className="h-72 w-full text-xs">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RechartsLineChart
+                            data={filteredIntelData
+                              .sort((a, b) => b.leads - a.leads)
+                              .slice(0, 10)}
+                            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                          >
+                            <XAxis dataKey="brand" tick={{ fontSize: 9 }} />
+                            <YAxis tick={{ fontSize: 9 }} />
+                            <Tooltip wrapperStyle={{ fontSize: 10 }} />
+                            <Legend wrapperStyle={{ fontSize: 10 }} />
+                            <Line type="monotone" dataKey="leads" stroke="#8B5CF6" strokeWidth={2.5} />
+                            <Line type="monotone" dataKey="quotes" stroke="#10B981" strokeWidth={2} />
+                          </RechartsLineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Most Demanded and Least Demanded Widgets */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Most Demanded Products */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                          <TrendingUp className="h-4.5 w-4.5 text-blue-600 animate-pulse" />
+                          Most Demanded Products (Score 85–100)
+                        </h3>
+                        <span className="text-[9px] font-extrabold text-blue-700 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded uppercase">
+                          🔥 High Demand
+                        </span>
+                      </div>
+                      <div className="overflow-x-auto text-[11px]">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-slate-100 text-slate-400 font-bold">
+                              <th className="py-2">Product</th>
+                              <th className="py-2 text-center">Demand Score</th>
+                              <th className="py-2 text-center">Growth %</th>
+                              <th className="py-2 text-center">Lead Requests</th>
+                              <th className="py-2 text-center">Repeat Orders</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-50 text-slate-700 font-semibold">
+                            {filteredIntelData
+                              .filter((p: any) => p.demandScore >= 85 && p.demandScore <= 100)
+                              .sort((a: any, b: any) => b.demandScore - a.demandScore)
+                              .map((p: any) => (
+                                <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
+                                  <td className="py-2.5 font-bold text-slate-800">{p.name}</td>
+                                  <td className="py-2.5 text-center"><span className="bg-blue-50 text-blue-700 px-2 py-0.5 rounded font-black">{p.demandScore}</span></td>
+                                  <td className="py-2.5 text-center text-emerald-600 font-extrabold">+{p.growth}%</td>
+                                  <td className="py-2.5 text-center">{p.leads}</td>
+                                  <td className="py-2.5 text-center font-bold text-slate-900">{p.repeatOrders}</td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Least Demanded Products */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                          <AlertTriangle className="h-4.5 w-4.5 text-amber-500" />
+                          Least Demanded Products (Score 10–40)
+                        </h3>
+                        <span className="text-[9px] font-extrabold text-slate-500 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded uppercase">
+                          ⚠️ Low Traction
+                        </span>
+                      </div>
+                      <div className="overflow-x-auto text-[11px]">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="border-b border-slate-100 text-slate-400 font-bold">
+                              <th className="py-2">Product</th>
+                              <th className="py-2 text-center">Demand Score</th>
+                              <th className="py-2 text-center">Growth %</th>
+                              <th className="py-2 text-center">Lead Requests</th>
+                              <th className="py-2 text-center">Repeat Orders</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-50 text-slate-700 font-semibold">
+                            {filteredIntelData
+                              .filter((p: any) => p.demandScore >= 10 && p.demandScore <= 40)
+                              .sort((a: any, b: any) => a.demandScore - b.demandScore)
+                              .map((p: any) => (
+                                <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
+                                  <td className="py-2.5 font-bold text-slate-800">{p.name}</td>
+                                  <td className="py-2.5 text-center"><span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-black">{p.demandScore}</span></td>
+                                  <td className={`py-2.5 text-center font-extrabold ${p.growth >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                    {p.growth >= 0 ? `+${p.growth}` : p.growth}%
+                                  </td>
+                                  <td className="py-2.5 text-center">{p.leads}</td>
+                                  <td className="py-2.5 text-center">{p.repeatOrders}</td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Revenue Contribution & regional demand */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                      <h4 className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">
+                        Revenue Contribution by Product Brand
+                      </h4>
+                      <div className="h-64 w-full text-xs">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RechartsPieChart>
+                            <Pie
+                              data={filteredIntelData.slice(0, 6)}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={80}
+                              paddingAngle={5}
+                              dataKey="revenue"
+                              nameKey="brand"
+                              label={{ fontSize: 9 }}
+                            >
+                              {filteredIntelData.slice(0, 6).map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={['#2563EB', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#EC4899'][index % 6]} />
+                              ))}
+                            </Pie>
+                            <Tooltip wrapperStyle={{ fontSize: 10 }} />
+                          </RechartsPieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    {/* Regional Demand details */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                      <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                        Territory-wise Product Interest Score
+                      </h3>
+                      <div className="space-y-4 text-xs pt-2">
+                        {['North India', 'South Territory', 'East Territory', 'Western Region'].map((reg, idx) => {
+                          const simpleName = reg.split(' ')[0];
+                          const regTotal = filteredIntelData
+                            .filter(p => p.region.toLowerCase().includes(simpleName.toLowerCase()) || simpleName.toLowerCase().includes(p.region.toLowerCase()))
+                            .reduce((sum, p) => sum + p.unitsSold, 0);
+                          const progress = Math.min(100, (regTotal / 1000) * 100);
+                          return (
+                            <div key={idx} className="space-y-1">
+                              <div className="flex justify-between font-bold text-slate-700">
+                                <span>{reg}</span>
+                                <span>{regTotal} Units</span>
+                              </div>
+                              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                                <div 
+                                  className="h-full bg-blue-600 rounded-full" 
+                                  style={{ width: `${progress}%` }} 
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* SALES VELOCITY ANALYTICS */}
+              {activeSubSection === 'Sales Velocity' && (
+                <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+                  {/* Sales Velocity curves */}
+                  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                        Monthly Sales Velocity Growth Trends
+                      </h3>
+                      <span className="text-[10px] text-slate-500 font-bold">Units / Day (MoM Comparison)</span>
+                    </div>
+
+                    <div className="h-80 w-full text-xs">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RechartsAreaChart
+                          data={filteredIntelData.slice(0, 12)}
+                          margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                        >
+                          <defs>
+                            <linearGradient id="colorVelocity" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#2563EB" stopOpacity={0.4}/>
+                              <stop offset="95%" stopColor="#2563EB" stopOpacity={0}/>
+                            </linearGradient>
+                            <linearGradient id="colorGrowth" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="#10B981" stopOpacity={0.4}/>
+                              <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <XAxis dataKey="brand" tick={{ fontSize: 9 }} />
+                          <YAxis tick={{ fontSize: 9 }} />
+                          <Tooltip wrapperStyle={{ fontSize: 10 }} />
+                          <Legend wrapperStyle={{ fontSize: 10 }} />
+                          <Area type="monotone" dataKey="salesVelocity" stroke="#2563EB" fillOpacity={1} fill="url(#colorVelocity)" name="Velocity (U/d)" />
+                          <Area type="monotone" dataKey="growth" stroke="#10B981" fillOpacity={1} fill="url(#colorGrowth)" name="Growth %" />
+                        </RechartsAreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+
+                  {/* Velocity distribution lists */}
+                  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                      Velocity Profile Log (Daily Run Rates)
+                    </h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="border-b border-slate-100 text-slate-400 font-bold">
+                            <th className="py-2.5">Product SKU</th>
+                            <th className="py-2.5">Daily Velocity</th>
+                            <th className="py-2.5">Weekly Proj.</th>
+                            <th className="py-2.5">Monthly Proj.</th>
+                            <th className="py-2.5">Trend Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50 text-slate-700">
+                          {filteredIntelData.slice(0, 6).map(p => (
+                            <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
+                              <td className="py-3 font-bold text-slate-800">{p.name}</td>
+                              <td className="py-3 font-extrabold text-blue-600">{(p.salesVelocity).toFixed(1)} / day</td>
+                              <td className="py-3">{(p.salesVelocity * 7).toFixed(0)} units</td>
+                              <td className="py-3">{(p.salesVelocity * 30).toFixed(0)} units</td>
+                              <td className="py-3">
+                                <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${
+                                  p.growth > 20 ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-slate-50 text-slate-700 border border-slate-200'
+                                }`}>
+                                  {p.growth > 20 ? '📈 Accelerating' : '⏳ Stable'}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* PRODUCT PERFORMANCE MATRIX */}
+              {activeSubSection === 'Product Performance' && (
+                <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+                  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-2">
+                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                      BCG Demand-Revenue Performance Matrix
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Products are grouped into quadrants based on dynamic demand score (threshold: 120 pts) and revenue contribution (threshold: ₹50,000).
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Stars */}
+                    <div className="bg-emerald-50/30 border border-emerald-200 rounded-2xl p-5 space-y-4">
+                      <div className="flex justify-between items-center border-b border-emerald-100 pb-2">
+                        <h4 className="text-xs font-black text-emerald-800 uppercase tracking-wider flex items-center gap-1.5">
+                          <Star className="h-4 w-4 fill-emerald-500 text-emerald-500" />
+                          Stars (High Demand, High Revenue)
+                        </h4>
+                        <span className="text-[10px] bg-emerald-100 text-emerald-700 font-extrabold px-2.5 py-0.5 rounded-full">
+                          ⭐ Lead Drivers
+                        </span>
+                      </div>
+                      <div className="space-y-2.5 text-xs max-h-60 overflow-y-auto">
+                        {filteredIntelData
+                          .filter(p => (p.leads + p.interest >= 120) && p.revenue >= 50000)
+                          .map(p => (
+                            <div key={p.id} className="p-3 bg-white border border-slate-200 rounded-xl flex justify-between items-center shadow-xs">
+                              <span className="font-bold text-slate-800 truncate max-w-[200px]">{p.name}</span>
+                              <div className="text-[10px] text-right">
+                                <p className="font-black text-slate-900">₹{p.revenue.toLocaleString()}</p>
+                                <p className="text-emerald-700 font-bold">Demand: {p.leads + p.interest}</p>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Growth Products */}
+                    <div className="bg-blue-50/30 border border-blue-200 rounded-2xl p-5 space-y-4">
+                      <div className="flex justify-between items-center border-b border-blue-100 pb-2">
+                        <h4 className="text-xs font-black text-blue-800 uppercase tracking-wider flex items-center gap-1.5">
+                          <TrendingUp className="h-4 w-4 text-blue-600" />
+                          Growth Products (High Demand, Low Revenue)
+                        </h4>
+                        <span className="text-[10px] bg-blue-100 text-blue-700 font-extrabold px-2.5 py-0.5 rounded-full">
+                          🚀 High Potential
+                        </span>
+                      </div>
+                      <div className="space-y-2.5 text-xs max-h-60 overflow-y-auto">
+                        {filteredIntelData
+                          .filter(p => (p.leads + p.interest >= 120) && p.revenue < 50000)
+                          .map(p => (
+                            <div key={p.id} className="p-3 bg-white border border-slate-200 rounded-xl flex justify-between items-center shadow-xs">
+                              <span className="font-bold text-slate-800 truncate max-w-[200px]">{p.name}</span>
+                              <div className="text-[10px] text-right">
+                                <p className="font-black text-slate-900">₹{p.revenue.toLocaleString()}</p>
+                                <p className="text-blue-600 font-bold">Demand: {p.leads + p.interest}</p>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Cash Cows */}
+                    <div className="bg-violet-50/30 border border-violet-200 rounded-2xl p-5 space-y-4">
+                      <div className="flex justify-between items-center border-b border-violet-100 pb-2">
+                        <h4 className="text-xs font-black text-violet-800 uppercase tracking-wider flex items-center gap-1.5">
+                          <DollarSign className="h-4 w-4 text-violet-600" />
+                          Cash Cows (Low Demand, High Revenue)
+                        </h4>
+                        <span className="text-[10px] bg-violet-100 text-violet-700 font-extrabold px-2.5 py-0.5 rounded-full">
+                          💰 Profit Centers
+                        </span>
+                      </div>
+                      <div className="space-y-2.5 text-xs max-h-60 overflow-y-auto">
+                        {filteredIntelData
+                          .filter(p => (p.leads + p.interest < 120) && p.revenue >= 50000)
+                          .map(p => (
+                            <div key={p.id} className="p-3 bg-white border border-slate-200 rounded-xl flex justify-between items-center shadow-xs">
+                              <span className="font-bold text-slate-800 truncate max-w-[200px]">{p.name}</span>
+                              <div className="text-[10px] text-right">
+                                <p className="font-black text-slate-900">₹{p.revenue.toLocaleString()}</p>
+                                <p className="text-violet-600 font-bold">Demand: {p.leads + p.interest}</p>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Weak Products */}
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
+                      <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                        <h4 className="text-xs font-black text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                          <AlertTriangle className="h-4 w-4 text-slate-500" />
+                          Weak Products (Low Demand, Low Revenue)
+                        </h4>
+                        <span className="text-[10px] bg-slate-100 text-slate-600 font-extrabold px-2.5 py-0.5 rounded-full">
+                          ⚠ Clean Up Risk
+                        </span>
+                      </div>
+                      <div className="space-y-2.5 text-xs max-h-60 overflow-y-auto">
+                        {filteredIntelData
+                          .filter(p => (p.leads + p.interest < 120) && p.revenue < 50000)
+                          .map(p => (
+                            <div key={p.id} className="p-3 bg-white border border-slate-200 rounded-xl flex justify-between items-center shadow-xs">
+                              <span className="font-bold text-slate-800 truncate max-w-[200px]">{p.name}</span>
+                              <div className="text-[10px] text-right">
+                                <p className="font-black text-slate-900">₹{p.revenue.toLocaleString()}</p>
+                                <p className="text-amber-700 font-bold">Demand: {p.leads + p.interest}</p>
+                              </div>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* PRODUCT FORECASTING */}
+              {activeSubSection === 'Product Forecasting' && (
+                <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+                  {/* Forecasting AI Input & Config */}
+                  <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 text-white space-y-4 shadow-md">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-yellow-300 animate-bounce" />
+                      <h3 className="text-base font-black tracking-tight">Enterprise Forecasting AI Engine</h3>
+                    </div>
+                    <p className="text-xs text-blue-100 max-w-2xl leading-relaxed">
+                      Predict next month demand, future sales run-rates, inventory replenishment thresholds, and seasonal index shifts with ML scoring logic.
+                    </p>
+                    <div className="flex flex-wrap gap-4 pt-2">
+                      <div className="bg-white/10 px-4 py-2.5 rounded-xl border border-white/10 text-xs">
+                        <p className="text-[10px] text-blue-200 uppercase font-bold">AI Prediction Confidence</p>
+                        <p className="text-sm font-black mt-0.5">94.8% Confidence Limit</p>
+                      </div>
+                      <div className="bg-white/10 px-4 py-2.5 rounded-xl border border-white/10 text-xs">
+                        <p className="text-[10px] text-blue-200 uppercase font-bold">Forecast Horizon</p>
+                        <p className="text-sm font-black mt-0.5">3 Months Outflow</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Future Sales Forecast Chart */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                      <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                        Predicted Demand VS Safe Stock Requirements
+                      </h3>
+                      <div className="h-72 w-full text-xs">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RechartsLineChart
+                            data={filteredIntelData.slice(0, 10).map(p => ({
+                              brand: p.brand,
+                              nextMonth: Math.round(p.unitsSold * 1.15),
+                              safeStock: Math.round(p.unitsSold * 1.3)
+                            }))}
+                            margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                          >
+                            <XAxis dataKey="brand" tick={{ fontSize: 9 }} />
+                            <YAxis tick={{ fontSize: 9 }} />
+                            <Tooltip wrapperStyle={{ fontSize: 10 }} />
+                            <Legend wrapperStyle={{ fontSize: 10 }} />
+                            <Line type="monotone" dataKey="nextMonth" stroke="#2563EB" strokeWidth={2} name="Forecasted Sales" />
+                            <Line type="monotone" dataKey="safeStock" stroke="#EF4444" strokeWidth={2} name="Required Buffer" />
+                          </RechartsLineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+
+                    {/* AI Insights Widget */}
+                    <div className="lg:col-span-1 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                      <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1">
+                        <Sparkles className="h-4 w-4 text-violet-500" />
+                        AI Smart Action Alerts
+                      </h3>
+                      <div className="space-y-3.5 text-xs text-slate-700 pt-2">
+                        <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl space-y-1">
+                          <p className="font-extrabold text-blue-800">🔥 Demand Spike</p>
+                          <p className="text-[11px] text-slate-655 leading-normal">
+                            Ethanol 99% demand increased by 34% this month.
+                          </p>
+                        </div>
+
+                        <div className="p-3 bg-emerald-50 border border-emerald-100 rounded-xl space-y-1">
+                          <p className="font-extrabold text-emerald-800">💰 Revenue Leader</p>
+                          <p className="text-[11px] text-slate-655 leading-normal">
+                            Citric Acid generated ₹4.8L revenue in the last 30 days.
+                          </p>
+                        </div>
+
+                        <div className="p-3 bg-rose-50 border border-rose-100 rounded-xl space-y-1">
+                          <p className="font-extrabold text-rose-800">⏳ Stock Exhaustion Alert</p>
+                          <p className="text-[11px] text-slate-655 leading-normal">
+                            HDPE Drums stock will be exhausted within 6 days.
+                          </p>
+                        </div>
+
+                        <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                          <p className="font-extrabold text-slate-700">📉 Sales Decline</p>
+                          <p className="text-[11px] text-slate-655 leading-normal">
+                            Silver Nitrate sales declined by 28% compared to last month.
+                          </p>
+                        </div>
+
+                        <div className="p-3 bg-indigo-50 border border-indigo-150 rounded-xl space-y-1">
+                          <p className="font-extrabold text-indigo-850">🔄 Customer Loyalty</p>
+                          <p className="text-[11px] text-slate-655 leading-normal">
+                            Isopropyl Alcohol has the highest repeat customer rate.
+                          </p>
+                        </div>
+
+                        <div className="p-3 bg-amber-50 border border-amber-150 rounded-xl space-y-1">
+                          <p className="font-extrabold text-amber-800">📦 Packaging Contrib.</p>
+                          <p className="text-[11px] text-slate-655 leading-normal">
+                            Packaging Bottles contributed 14% of total sales revenue.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* INVENTORY INSIGHTS */}
+              {activeSubSection === 'Inventory Insights' && (
+                <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+                  {/* Stock Levels Alerts & Healthy status */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Sourcing Levels */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 lg:col-span-1">
+                      <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                        Inventory Sourcing Health
+                      </h3>
+
+                      <div className="space-y-4 text-xs pt-2">
+                        <div className="p-3 bg-red-50 border border-red-150 rounded-xl flex items-center justify-between">
+                          <div>
+                            <p className="font-black text-red-800 text-xs">🔴 Critical Stock Items</p>
+                            <p className="text-[10px] text-slate-550 mt-0.5">Below buffer reserve safety limit</p>
+                          </div>
+                          <span className="text-base font-black text-red-800">
+                            {filteredIntelData.filter(p => p.stock <= 5).length} SKU
+                          </span>
+                        </div>
+
+                        <div className="p-3 bg-amber-50 border border-amber-150 rounded-xl flex items-center justify-between">
+                          <div>
+                            <p className="font-black text-amber-800 text-xs">🟠 Low Stock Indicators</p>
+                            <p className="text-[10px] text-slate-550 mt-0.5">Need purchase reorder confirmation</p>
+                          </div>
+                          <span className="text-base font-black text-amber-800">
+                            {filteredIntelData.filter(p => p.stock > 5 && p.stock <= 20).length} SKU
+                          </span>
+                        </div>
+
+                        <div className="p-3 bg-emerald-50 border border-emerald-150 rounded-xl flex items-center justify-between">
+                          <div>
+                            <p className="font-black text-emerald-800 text-xs">🟢 Healthy Stock Index</p>
+                            <p className="text-[10px] text-slate-550 mt-0.5">SKUs with standard safety buffer</p>
+                          </div>
+                          <span className="text-base font-black text-emerald-800">
+                            {filteredIntelData.filter(p => p.stock > 20).length} SKU
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Recharts Pie Chart */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3 lg:col-span-2">
+                      <h4 className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">
+                        SKU Stock Index Share (Warehouse Allocations)
+                      </h4>
+                      <div className="h-64 w-full text-xs">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RechartsPieChart>
+                            <Pie
+                              data={[
+                                { name: 'Critical Stock', value: filteredIntelData.filter(p => p.stock <= 5).reduce((sum, p) => sum + p.stock, 0) },
+                                { name: 'Low Stock', value: filteredIntelData.filter(p => p.stock > 5 && p.stock <= 20).reduce((sum, p) => sum + p.stock, 0) },
+                                { name: 'Healthy Stock', value: filteredIntelData.filter(p => p.stock > 20).reduce((sum, p) => sum + p.stock, 0) }
+                              ]}
+                              cx="50%"
+                              cy="50%"
+                              outerRadius={80}
+                              dataKey="value"
+                              label={{ fontSize: 9 }}
+                            >
+                              <Cell fill="#EF4444" />
+                              <Cell fill="#F59E0B" />
+                              <Cell fill="#10B981" />
+                            </Pie>
+                            <Tooltip wrapperStyle={{ fontSize: 10 }} />
+                            <Legend wrapperStyle={{ fontSize: 10 }} />
+                          </RechartsPieChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Regional demand map simulation */}
+                  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <MapPin className="h-4.5 w-4.5 text-blue-500" />
+                      Regional Demand Map (India Sourcing Nodes)
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
+                      {[
+                        { region: 'North Zone', state: 'North India Sourcing', revenue: '₹22,50,000', units: 710, status: 'Healthy' },
+                        { region: 'West Zone', state: 'West India Sourcing', revenue: '₹35,00,000', units: 1160, status: 'Peak Demand' },
+                        { region: 'South Zone', state: 'South India Sourcing', revenue: '₹18,00,000', units: 820, status: 'Accelerating' },
+                        { region: 'East Zone', state: 'East India Sourcing', revenue: '₹9,50,000', units: 310, status: 'Low Activity' }
+                      ].map((item, idx) => (
+                        <div key={idx} className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                          <p className="text-[10px] text-slate-450 uppercase font-black">{item.region}</p>
+                          <h4 className="font-extrabold text-xs text-slate-800">{item.state}</h4>
+                          <div className="text-[11px] pt-1 text-slate-650">
+                            <p>Revenue: <span className="font-bold text-slate-900">{item.revenue}</span></p>
+                            <p>Sourcing: <span className="font-bold text-slate-900">{item.units} Units</span></p>
+                          </div>
+                          <span className={`inline-block px-2 py-0.5 rounded text-[8px] font-black uppercase ${
+                            idx === 1 ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-blue-50 text-blue-700 border border-blue-100'
+                          }`}>
+                            {item.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Inventory Alerts details */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Low Stock Alerts */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider text-red-650 flex items-center gap-1">
+                        🔴 Low Stock Alerts
+                      </h4>
+                      <div className="space-y-2 text-xs pt-1">
+                        <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl flex justify-between">
+                          <span className="font-extrabold text-slate-800">Ethanol 99% Pure</span>
+                          <span className="font-black text-red-600 bg-red-50 px-2 py-0.5 rounded">8 units left</span>
+                        </div>
+                        <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl flex justify-between">
+                          <span className="font-extrabold text-slate-800">Citric Acid Anhydrous</span>
+                          <span className="font-black text-red-600 bg-red-50 px-2 py-0.5 rounded">12 units left</span>
+                        </div>
+                        <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl flex justify-between">
+                          <span className="font-extrabold text-slate-800">HDPE Drums 200L</span>
+                          <span className="font-black text-red-600 bg-red-50 px-2 py-0.5 rounded">20 units left</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Overstocked Products */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider text-amber-600 flex items-center gap-1">
+                        🟠 Overstocked Products
+                      </h4>
+                      <div className="space-y-2 text-xs pt-1">
+                        <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl flex justify-between">
+                          <span className="font-extrabold text-slate-800">Storage Tanks 5000L</span>
+                          <span className="font-bold text-slate-500">Stock: 20 units</span>
+                        </div>
+                        <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl flex justify-between">
+                          <span className="font-extrabold text-slate-800">Silver Nitrate AR</span>
+                          <span className="font-bold text-slate-500">Stock: 300 units</span>
+                        </div>
+                        <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl flex justify-between">
+                          <span className="font-extrabold text-slate-800">Industrial Mixers 500L</span>
+                          <span className="font-bold text-slate-500">Stock: 15 units</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Dead Inventory */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-3">
+                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider text-slate-655 flex items-center gap-1">
+                        🛑 Dead Inventory
+                      </h4>
+                      <div className="space-y-2 text-xs pt-1">
+                        <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl flex justify-between">
+                          <span className="font-extrabold text-slate-800">Flow Meter Digital</span>
+                          <span className="font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded">No sales in 50d</span>
+                        </div>
+                        <div className="p-2.5 bg-slate-50 border border-slate-100 rounded-xl flex justify-between">
+                          <span className="font-extrabold text-slate-800">Boric Acid Powder</span>
+                          <span className="font-black text-slate-500 bg-slate-100 px-2 py-0.5 rounded">No sales in 45d</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* PRODUCT REPORTS */}
+              {activeSubSection === 'Product Reports' && (
+                <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
+                  {/* Download Reports Grid */}
+                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-4">
+                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                      Generate Downloadable Intelligence Reports
+                    </h3>
+                    <p className="text-xs text-slate-500 max-w-xl">
+                      Select a report category below to export compiled CSV, Excel spreadsheet, or PDF invoice ledgers.
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pt-3">
+                      {[
+                        { title: 'Product Sales Report', desc: 'Compiled units, revenue, and daily velocity run-rates.' },
+                        { title: 'Demand Report', desc: 'Calculation metrics of lead interest and repeat order conversions.' },
+                        { title: 'Revenue Report', desc: 'Net billing, margins, and profit contribution margins.' },
+                        { title: 'Inventory Report', desc: 'SKU counts, aging days, and warehouse stock buffers.' },
+                        { title: 'Forecast Report', desc: 'ML predicted next month demand levels and target buffer values.' }
+                      ].map((rep, idx) => (
+                        <div key={idx} className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3 flex flex-col justify-between">
+                          <div>
+                            <h4 className="text-xs font-extrabold text-slate-800">{rep.title}</h4>
+                            <p className="text-[10px] text-slate-500 leading-normal mt-1">{rep.desc}</p>
+                          </div>
+                          <div className="flex gap-2 pt-2 text-[10px]">
+                            <button 
+                              onClick={() => alert(`Generating Excel export for ${rep.title}`)}
+                              className="flex-grow py-1.5 bg-white border border-slate-200 hover:border-slate-350 text-slate-700 font-bold rounded-lg cursor-pointer transition-colors text-center"
+                            >
+                              XLSX
+                            </button>
+                            <button 
+                              onClick={() => alert(`Generating CSV export for ${rep.title}`)}
+                              className="flex-grow py-1.5 bg-white border border-slate-200 hover:border-slate-350 text-slate-700 font-bold rounded-lg cursor-pointer transition-colors text-center"
+                            >
+                              CSV
+                            </button>
+                            <button 
+                              onClick={() => alert(`Generating PDF export for ${rep.title}`)}
+                              className="flex-grow py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg cursor-pointer transition-colors text-center"
+                            >
+                              PDF
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
           )}
 
@@ -2546,7 +3679,7 @@ export default function AdminDashboard() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                     {inventory.map((item, idx) => (
-                      <div key={item.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:border-slate-300 hover:shadow-md transition-all duration-300 flex flex-col justify-between h-64 group">
+                      <div key={item.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:border-slate-300 hover:shadow-md transition-all duration-300 flex flex-col justify-between group min-h-[19rem]">
                         <div className="relative h-24 w-full bg-slate-100 flex-shrink-0">
                           <img 
                             src={idx % 2 === 0 ? 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=300&auto=format&fit=crop&q=80' : 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=300&auto=format&fit=crop&q=80'} 
@@ -2555,19 +3688,51 @@ export default function AdminDashboard() {
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-white to-transparent" />
                           <span className="absolute bottom-2 left-4 text-[9px] font-mono bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded font-bold">{item.sku}</span>
+                          {item.discount && item.discount > 0 ? (
+                            <span className="absolute top-2 right-4 text-[9px] font-black bg-red-100 text-red-700 border border-red-200 px-2 py-0.5 rounded shadow-sm">
+                              {item.discount}% OFF
+                            </span>
+                          ) : null}
                         </div>
 
                         <div className="px-5 pt-3 pb-4 flex-grow flex flex-col justify-between">
                           <div>
                             <h4 className="font-extrabold text-sm text-slate-800 truncate">{item.name}</h4>
                             <p className="text-[9px] text-slate-450 uppercase font-bold mt-0.5">{item.category}</p>
-                            <div className="mt-2.5 flex justify-between text-[10px] text-slate-600 font-medium">
-                              <span>Available Stock:</span>
-                              <strong className={`font-bold ${item.stock < 20 ? 'text-red-600' : 'text-slate-800'}`}>{item.stock} units</strong>
+                            
+                            <div className="mt-2.5 space-y-2">
+                              <div className="flex justify-between text-[10px] text-slate-600 font-medium">
+                                <span>Available Stock:</span>
+                                <strong className={`font-bold ${item.stock < 20 ? 'text-red-600' : 'text-slate-800'}`}>{item.stock} units</strong>
+                              </div>
+                              
+                              <div className="pt-2 border-t border-slate-50 space-y-1">
+                                <div className="flex justify-between items-center text-[9px] text-slate-500 font-extrabold uppercase tracking-wider">
+                                  <span>Manage Discount</span>
+                                  <span className="text-red-600 font-black text-xs">{item.discount || 0}%</span>
+                                </div>
+                                <input
+                                  type="range"
+                                  min="0"
+                                  max="50"
+                                  value={item.discount || 0}
+                                  onChange={(e) => updateProductDiscount(item.id, parseInt(e.target.value) || 0)}
+                                  className="w-full accent-red-500 h-1.5 bg-slate-100 rounded-lg cursor-pointer"
+                                />
+                              </div>
                             </div>
                           </div>
                           <div className="pt-3 border-t border-slate-100 flex justify-between items-center mt-3 text-xs">
-                            <strong className="text-blue-600 text-sm font-black">₹{item.price.toLocaleString()}</strong>
+                            <div className="flex flex-col">
+                              {item.discount && item.discount > 0 ? (
+                                <>
+                                  <span className="text-[9px] line-through text-slate-400">₹{item.price.toLocaleString()}</span>
+                                  <strong className="text-blue-600 text-sm font-black">₹{Math.round(item.price * (1 - item.discount / 100)).toLocaleString()}</strong>
+                                </>
+                              ) : (
+                                <strong className="text-blue-650 text-sm font-black">₹{item.price.toLocaleString()}</strong>
+                              )}
+                            </div>
                             <span className="text-[8.5px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded font-bold">GST: {item.gst}%</span>
                           </div>
                         </div>
