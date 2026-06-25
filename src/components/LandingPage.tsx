@@ -40,7 +40,13 @@ import {
   Trash2,
   MapPin,
   Check,
-  CreditCard as CardIcon
+  CreditCard as CardIcon,
+  Coins,
+  Gift,
+  Sparkles,
+  Award,
+  RotateCcw,
+  BadgePercent
 } from 'lucide-react';
 
 interface Product {
@@ -73,7 +79,251 @@ interface Order {
   shippingAddress: string;
   paymentMethod: string;
   status: 'Pending' | 'Shipped' | 'Delivered';
+  pointsRedeemed?: number;
+  pointsEarned?: number;
 }
+
+interface Store {
+  id: string;
+  name: string;
+  area: 'Mumbai' | 'Delhi' | 'Bangalore' | 'Kolkata';
+  address: string;
+  phone: string;
+  rating: number;
+  img: string;
+  banner: string;
+  products: string[]; // List of product IDs available at this store
+}
+
+const mockStores: Store[] = [
+  // MUMBAI STORES
+  {
+    id: 's1',
+    name: 'Mumbai Tech Hub',
+    area: 'Mumbai',
+    address: '102, Tech Park, Bandra Kurla Complex, Mumbai, MH - 400051',
+    phone: '+91 22 6678 1234',
+    rating: 4.8,
+    img: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=300&auto=format&fit=crop&q=80',
+    banner: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80',
+    products: ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10']
+  },
+  {
+    id: 's2',
+    name: 'Mumbai Gadget World',
+    area: 'Mumbai',
+    address: 'Shop 15, Link Road, Andheri West, Mumbai, MH - 400053',
+    phone: '+91 22 2634 5678',
+    rating: 4.5,
+    img: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=300&auto=format&fit=crop&q=80',
+    banner: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&auto=format&fit=crop&q=80',
+    products: ['p11', 'p12', 'p13', 'p14', 'p15', 'p16', 'p17', 'p18', 'p19', 'p20', 'p21']
+  },
+  {
+    id: 's3',
+    name: 'Gateway Electronics',
+    area: 'Mumbai',
+    address: 'Commercial Block C, Nariman Point, Mumbai, MH - 400021',
+    phone: '+91 22 4009 8811',
+    rating: 4.6,
+    img: 'https://images.unsplash.com/photo-1542744094-3a31f103e35f?w=300&auto=format&fit=crop&q=80',
+    banner: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=800&auto=format&fit=crop&q=80',
+    products: ['p1', 'p4', 'p7', 'p10', 'p13', 'p16', 'p19']
+  },
+  {
+    id: 's4',
+    name: 'Bandra Digital Studio',
+    area: 'Mumbai',
+    address: 'Carter Road Promenade, Bandra West, Mumbai, MH - 400050',
+    phone: '+91 22 3918 2039',
+    rating: 4.4,
+    img: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=300&auto=format&fit=crop&q=80',
+    banner: 'https://images.unsplash.com/photo-1542744094-3a31f103e35f?w=800&auto=format&fit=crop&q=80',
+    products: ['p2', 'p5', 'p8', 'p11', 'p14', 'p17', 'p20']
+  },
+  {
+    id: 's5',
+    name: 'Channi Road Hardware',
+    area: 'Mumbai',
+    address: 'Near Station, Channi Road, Mumbai, MH - 400004',
+    phone: '+91 22 2382 7766',
+    rating: 4.2,
+    img: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&auto=format&fit=crop&q=80',
+    banner: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80',
+    products: ['p3', 'p6', 'p9', 'p12', 'p15', 'p18', 'p21']
+  },
+
+  // DELHI STORES
+  {
+    id: 's6',
+    name: 'Delhi Digital Solutions',
+    area: 'Delhi',
+    address: 'F-22, Connaught Place, New Delhi, DL - 110001',
+    phone: '+91 11 4151 9999',
+    rating: 4.7,
+    img: 'https://images.unsplash.com/photo-1542744094-3a31f103e35f?w=300&auto=format&fit=crop&q=80',
+    banner: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&auto=format&fit=crop&q=80',
+    products: ['p1', 'p3', 'p5', 'p7', 'p9', 'p11', 'p13', 'p15', 'p17', 'p19', 'p21']
+  },
+  {
+    id: 's7',
+    name: 'Connaught Place Gadgets',
+    area: 'Delhi',
+    address: 'Radial Road 3, Inner Circle, Connaught Place, New Delhi, DL - 110001',
+    phone: '+91 11 4321 0987',
+    rating: 4.5,
+    img: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=300&auto=format&fit=crop&q=80',
+    banner: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=800&auto=format&fit=crop&q=80',
+    products: ['p2', 'p4', 'p6', 'p8', 'p10', 'p12', 'p14', 'p16', 'p18', 'p20']
+  },
+  {
+    id: 's8',
+    name: 'Nehru Place Tech Market',
+    area: 'Delhi',
+    address: 'G-12, Nehru Place Building, New Delhi, DL - 110019',
+    phone: '+91 11 2641 5544',
+    rating: 4.3,
+    img: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=300&auto=format&fit=crop&q=80',
+    banner: 'https://images.unsplash.com/photo-1542744094-3a31f103e35f?w=800&auto=format&fit=crop&q=80',
+    products: ['p1', 'p2', 'p3', 'p10', 'p11', 'p12', 'p19', 'p20', 'p21']
+  },
+  {
+    id: 's9',
+    name: 'Karol Bagh Wireless',
+    area: 'Delhi',
+    address: 'Ghaffar Market, Karol Bagh, New Delhi, DL - 110005',
+    phone: '+91 11 2575 1122',
+    rating: 4.1,
+    img: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&auto=format&fit=crop&q=80',
+    banner: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80',
+    products: ['p4', 'p5', 'p6', 'p13', 'p14', 'p15', 'p16', 'p17']
+  },
+  {
+    id: 's10',
+    name: 'Chandni Chowk Systems',
+    area: 'Delhi',
+    address: 'Lajpat Rai Market, Chandni Chowk, Delhi, DL - 110006',
+    phone: '+91 11 2386 4433',
+    rating: 4.2,
+    img: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=300&auto=format&fit=crop&q=80',
+    banner: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&auto=format&fit=crop&q=80',
+    products: ['p7', 'p8', 'p9', 'p16', 'p17', 'p18', 'p19', 'p20']
+  },
+
+  // BANGALORE STORES
+  {
+    id: 's11',
+    name: 'Bangalore Silicon Shop',
+    area: 'Bangalore',
+    address: '80 Feet Road, Koramangala, Bangalore, KA - 560034',
+    phone: '+91 80 4123 4567',
+    rating: 4.9,
+    img: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=300&auto=format&fit=crop&q=80',
+    banner: 'https://images.unsplash.com/photo-1542744094-3a31f103e35f?w=800&auto=format&fit=crop&q=80',
+    products: ['p2', 'p4', 'p6', 'p8', 'p10', 'p12', 'p14', 'p16', 'p18', 'p20']
+  },
+  {
+    id: 's12',
+    name: 'Indiranagar Electronics',
+    area: 'Bangalore',
+    address: '100 Feet Road, Indiranagar, Bangalore, KA - 560008',
+    phone: '+91 80 4999 1111',
+    rating: 4.7,
+    img: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=300&auto=format&fit=crop&q=80',
+    banner: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80',
+    products: ['p1', 'p3', 'p5', 'p9', 'p11', 'p13', 'p15', 'p17', 'p21']
+  },
+  {
+    id: 's13',
+    name: 'Koramangala Gadgetry',
+    area: 'Bangalore',
+    address: 'Jyoti Nivas College Road, 5th Block Koramangala, Bangalore, KA - 560095',
+    phone: '+91 80 2552 4433',
+    rating: 4.6,
+    img: 'https://images.unsplash.com/photo-1542744094-3a31f103e35f?w=300&auto=format&fit=crop&q=80',
+    banner: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=800&auto=format&fit=crop&q=80',
+    products: ['p2', 'p5', 'p6', 'p8', 'p12', 'p14', 'p18', 'p20']
+  },
+  {
+    id: 's14',
+    name: 'Whitefield Cyber Hub',
+    area: 'Bangalore',
+    address: 'ITPB Road, Whitefield, Bangalore, KA - 560066',
+    phone: '+91 80 6644 2200',
+    rating: 4.8,
+    img: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=300&auto=format&fit=crop&q=80',
+    banner: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&auto=format&fit=crop&q=80',
+    products: ['p1', 'p2', 'p3', 'p4', 'p5', 'p15', 'p16', 'p17', 'p18', 'p19']
+  },
+  {
+    id: 's15',
+    name: 'HSR Layout Power Solutions',
+    area: 'Bangalore',
+    address: 'Sector 3, HSR Layout, Bangalore, KA - 560102',
+    phone: '+91 80 2572 8877',
+    rating: 4.5,
+    img: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&auto=format&fit=crop&q=80',
+    banner: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80',
+    products: ['p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12', 'p13', 'p20', 'p21']
+  },
+
+  // KOLKATA STORES
+  {
+    id: 's16',
+    name: 'Kolkata Electronics Junction',
+    area: 'Kolkata',
+    address: 'Salt Lake Sector V, Kolkata, WB - 700091',
+    phone: '+91 33 2357 8888',
+    rating: 4.6,
+    img: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=300&auto=format&fit=crop&q=80',
+    banner: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=800&auto=format&fit=crop&q=80',
+    products: ['p1', 'p2', 'p4', 'p5', 'p8', 'p9', 'p12', 'p15', 'p16', 'p19', 'p20']
+  },
+  {
+    id: 's17',
+    name: 'Salt Lake Tech Point',
+    area: 'Kolkata',
+    address: 'Block EP-GP, Sector V, Salt Lake, Kolkata, WB - 700091',
+    phone: '+91 33 4001 2233',
+    rating: 4.5,
+    img: 'https://images.unsplash.com/photo-1542744094-3a31f103e35f?w=300&auto=format&fit=crop&q=80',
+    banner: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&auto=format&fit=crop&q=80',
+    products: ['p3', 'p6', 'p7', 'p10', 'p11', 'p13', 'p14', 'p17', 'p18', 'p21']
+  },
+  {
+    id: 's18',
+    name: 'Park Street Media Hub',
+    area: 'Kolkata',
+    address: 'Park Street Crossroad, Kolkata, WB - 700016',
+    phone: '+91 33 2249 5566',
+    rating: 4.8,
+    img: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=300&auto=format&fit=crop&q=80',
+    banner: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?w=800&auto=format&fit=crop&q=80',
+    products: ['p1', 'p5', 'p9', 'p10', 'p12', 'p16', 'p20']
+  },
+  {
+    id: 's19',
+    name: 'Howrah Gadgets & More',
+    area: 'Kolkata',
+    address: 'GT Road, Howrah, West Bengal - 711101',
+    phone: '+91 33 2665 9900',
+    rating: 4.2,
+    img: 'https://images.unsplash.com/photo-1497366216548-37526070297c?w=300&auto=format&fit=crop&q=80',
+    banner: 'https://images.unsplash.com/photo-1542744094-3a31f103e35f?w=800&auto=format&fit=crop&q=80',
+    products: ['p2', 'p6', 'p7', 'p11', 'p12', 'p15', 'p17', 'p21']
+  },
+  {
+    id: 's20',
+    name: 'Gariahat Digital Corner',
+    area: 'Kolkata',
+    address: 'Rashbehari Avenue, Gariahat, Kolkata, WB - 700019',
+    phone: '+91 33 2464 3322',
+    rating: 4.4,
+    img: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=300&auto=format&fit=crop&q=80',
+    banner: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=800&auto=format&fit=crop&q=80',
+    products: ['p3', 'p4', 'p8', 'p9', 'p13', 'p14', 'p18', 'p19']
+  }
+];
 
 export default function LandingPage() {
   const { login } = useAppState();
@@ -84,8 +334,40 @@ export default function LandingPage() {
   const [showCatDropdown, setShowCatDropdown] = useState(false);
   const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
 
-  // E-commerce Views: 'home' | 'categories' | 'shop' | 'product-detail' | 'checkout' | 'thank-you' | 'orders' | 'wishlist' | 'category-detail'
-  const [view, setView] = useState<'home' | 'categories' | 'shop' | 'product-detail' | 'checkout' | 'thank-you' | 'orders' | 'wishlist' | 'category-detail'>('home');
+  // Store & Wallet States
+  const [selectedArea, setSelectedArea] = useState<'Mumbai' | 'Delhi' | 'Bangalore' | 'Kolkata'>('Mumbai');
+  const [selectedStore, setSelectedStore] = useState<Store | null>(null);
+  const [walletBalance, setWalletBalance] = useState<number>(500); // 500 reward points
+  const [redeemPoints, setRedeemPoints] = useState<boolean>(false);
+  
+  // Wallet transaction history
+  const [walletTransactions, setWalletTransactions] = useState<Array<{
+    id: string;
+    type: 'credit' | 'debit';
+    amount: number;
+    description: string;
+    date: string;
+  }>>([
+    { id: 'WTX-998', type: 'credit', amount: 400, description: 'Welcome Bonus Reward', date: new Date(Date.now() - 86400000 * 2).toLocaleDateString() + ' 09:15 AM' },
+    { id: 'WTX-999', type: 'credit', amount: 100, description: 'First Profile Verification Bonus', date: new Date(Date.now() - 86400000).toLocaleDateString() + ' 02:30 PM' }
+  ]);
+
+  // Scratch card and promo states
+  const [claimedDailyScratch, setClaimedDailyScratch] = useState<boolean>(false);
+  const [redeemedPromoCodes, setRedeemedPromoCodes] = useState<string[]>([]);
+  
+  // Wallet Form & Interaction States
+  const [loadAmount, setLoadAmount] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<'upi' | 'card'>('upi');
+  const [loadingFunds, setLoadingFunds] = useState<boolean>(false);
+  const [promoCodeInput, setPromoCodeInput] = useState<string>('');
+  const [promoError, setPromoError] = useState<string>('');
+  const [promoSuccess, setPromoSuccess] = useState<string>('');
+  const [scratchReward, setScratchReward] = useState<number | null>(null);
+  const [scratchRevealed, setScratchRevealed] = useState<boolean>(false);
+
+  // E-commerce Views: 'home' | 'categories' | 'shop' | 'product-detail' | 'checkout' | 'thank-you' | 'orders' | 'wishlist' | 'category-detail' | 'wallet'
+  const [view, setView] = useState<'home' | 'categories' | 'shop' | 'product-detail' | 'checkout' | 'thank-you' | 'orders' | 'wishlist' | 'category-detail' | 'wallet'>('home');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [detailTab, setDetailTab] = useState<'desc' | 'specs' | 'reviews'>('desc');
@@ -555,7 +837,8 @@ export default function LandingPage() {
       const matchSearch = searchQuery === '' || 
         product.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
         product.category.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchBrand && matchPrice && matchRating && matchSearch;
+      const matchStore = selectedStore ? selectedStore.products.includes(product.id) : true;
+      return matchBrand && matchPrice && matchRating && matchSearch && matchStore;
     });
     // Shuffle the final list deterministically for randomized shop display as requested
     const shuffled = [...list].sort((a, b) => getProductDeterministicScore(a) - getProductDeterministicScore(b));
@@ -564,7 +847,7 @@ export default function LandingPage() {
     if (shopSortOrder === 'high-low') return shuffled.sort((a, b) => b.price - a.price);
     if (shopSortOrder === 'rating') return shuffled.sort((a, b) => b.rating - a.rating);
     return shuffled;
-  }, [productsDataset, shopFilterBrand, shopFilterPrice, shopFilterRating, shopSortOrder, searchQuery]);
+  }, [productsDataset, shopFilterBrand, shopFilterPrice, shopFilterRating, shopSortOrder, searchQuery, selectedStore]);
 
   // Filtered products list specifically for category-detail view
   const categoryFilteredProducts = useMemo(() => {
@@ -574,7 +857,8 @@ export default function LandingPage() {
       const matchBrand = shopFilterBrand === 'All' || product.brand === shopFilterBrand;
       const matchPrice = product.price <= shopFilterPrice;
       const matchRating = product.rating >= shopFilterRating;
-      return matchCategory && matchBrand && matchPrice && matchRating;
+      const matchStore = selectedStore ? selectedStore.products.includes(product.id) : true;
+      return matchCategory && matchBrand && matchPrice && matchRating && matchStore;
     });
     // Shuffle lists deterministically for dynamic catalog feel
     const shuffled = [...list].sort((a, b) => getProductDeterministicScore(a) - getProductDeterministicScore(b));
@@ -582,7 +866,7 @@ export default function LandingPage() {
     if (shopSortOrder === 'high-low') return shuffled.sort((a, b) => b.price - a.price);
     if (shopSortOrder === 'rating') return shuffled.sort((a, b) => b.rating - a.rating);
     return shuffled;
-  }, [productsDataset, selectedCategory, shopFilterBrand, shopFilterPrice, shopFilterRating, shopSortOrder]);
+  }, [productsDataset, selectedCategory, shopFilterBrand, shopFilterPrice, shopFilterRating, shopSortOrder, selectedStore]);
 
   // Cart operations
   const addToCart = (product: Product, quantity = 1) => {
@@ -670,19 +954,150 @@ export default function LandingPage() {
 
   // Submit Order Action
   const handlePlaceOrder = () => {
+    const pointsToRedeem = redeemPoints ? Math.min(walletBalance, Math.floor(cartTotal + 15)) : 0;
+    const finalTotal = (cartTotal + 15) - pointsToRedeem;
+    const pointsEarned = Math.round(finalTotal * 0.05);
+
     const newOrder: Order = {
       id: `AMR-${Math.floor(100000 + Math.random() * 900000)}`,
       date: new Date().toLocaleDateString(),
       items: [...cart],
-      total: cartTotal + 15,
+      total: finalTotal,
       shippingAddress: `${shippingAddress}, ${shippingCity}`,
       paymentMethod: 'Sandbox Credit Card',
-      status: 'Pending'
+      status: 'Pending',
+      pointsRedeemed: pointsToRedeem,
+      pointsEarned: pointsEarned
     };
+    
     setOrders(prev => [newOrder, ...prev]);
     setPlacedOrderInfo(newOrder);
+    setWalletBalance(prev => prev - pointsToRedeem + pointsEarned);
+
+    // Update wallet transactions ledger
+    const txsToAdd: Array<{ id: string; type: 'credit' | 'debit'; amount: number; description: string; date: string }> = [];
+    const timestamp = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (pointsToRedeem > 0) {
+      txsToAdd.push({
+        id: `WTX-${Math.floor(100000 + Math.random() * 900000)}`,
+        type: 'debit',
+        amount: pointsToRedeem,
+        description: `Redeemed on Order ${newOrder.id}`,
+        date: timestamp
+      });
+    }
+    if (pointsEarned > 0) {
+      txsToAdd.push({
+        id: `WTX-${Math.floor(100000 + Math.random() * 900000)}`,
+        type: 'credit',
+        amount: pointsEarned,
+        description: `5% Cashback on Order ${newOrder.id}`,
+        date: timestamp
+      });
+    }
+    if (txsToAdd.length > 0) {
+      setWalletTransactions(prev => [...txsToAdd, ...prev]);
+    }
+
+    setRedeemPoints(false);
     setCart([]);
     setView('thank-you');
+  };
+
+  // Wallet Interaction Handlers
+  const handleLoadFunds = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amt = parseFloat(loadAmount);
+    if (isNaN(amt) || amt <= 0) {
+      alert("Please enter a valid amount greater than 0");
+      return;
+    }
+    
+    setLoadingFunds(true);
+    setTimeout(() => {
+      setWalletBalance(prev => prev + amt);
+      const timestamp = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      setWalletTransactions(prev => [
+        {
+          id: `WTX-${Math.floor(100000 + Math.random() * 900000)}`,
+          type: 'credit',
+          amount: amt,
+          description: `Loaded money via ${paymentMethod.toUpperCase()}`,
+          date: timestamp
+        },
+        ...prev
+      ]);
+      setLoadingFunds(false);
+      setLoadAmount('');
+      alert(`Successfully added ₹${amt} to your wallet!`);
+    }, 1200);
+  };
+
+  const handleRedeemPromoCode = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPromoError('');
+    setPromoSuccess('');
+    const code = promoCodeInput.trim().toUpperCase();
+
+    if (!code) {
+      setPromoError('Please enter a promo code.');
+      return;
+    }
+
+    if (redeemedPromoCodes.includes(code)) {
+      setPromoError('You have already redeemed this promo code.');
+      return;
+    }
+
+    let rewardAmount = 0;
+    if (code === 'WELCOME100') {
+      rewardAmount = 100;
+    } else if (code === 'FESTIVE250') {
+      rewardAmount = 250;
+    } else {
+      setPromoError('Invalid promo code. Try WELCOME100 or FESTIVE250.');
+      return;
+    }
+
+    setWalletBalance(prev => prev + rewardAmount);
+    setRedeemedPromoCodes(prev => [...prev, code]);
+    
+    const timestamp = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    setWalletTransactions(prev => [
+      {
+        id: `WTX-${Math.floor(100000 + Math.random() * 900000)}`,
+        type: 'credit',
+        amount: rewardAmount,
+        description: `Promo Code Redeemed: ${code}`,
+        date: timestamp
+      },
+      ...prev
+    ]);
+
+    setPromoSuccess(`Success! ₹${rewardAmount} credited to your wallet.`);
+    setPromoCodeInput('');
+  };
+
+  const handleScratchClaim = () => {
+    if (claimedDailyScratch) return;
+    
+    const winAmt = Math.floor(15 + Math.random() * 61);
+    setScratchReward(winAmt);
+    setScratchRevealed(true);
+    setClaimedDailyScratch(true);
+    setWalletBalance(prev => prev + winAmt);
+
+    const timestamp = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    setWalletTransactions(prev => [
+      {
+        id: `WTX-${Math.floor(100000 + Math.random() * 900000)}`,
+        type: 'credit',
+        amount: winAmt,
+        description: 'Daily Scratch Card Reward',
+        date: timestamp
+      },
+      ...prev
+    ]);
   };
 
   const viewProductDetails = (product: Product) => {
@@ -792,6 +1207,14 @@ export default function LandingPage() {
             <button onClick={() => setShowPortalModal(true)} className="hover:text-yellow-500 transition-colors font-bold text-slate-800 cursor-pointer">Register or Sign in</button>
             <span className="text-slate-300">|</span>
             <button onClick={() => setView('orders')} className="hover:text-yellow-500 transition-colors cursor-pointer">My Orders ({orders.length})</button>
+            <span className="text-slate-300">|</span>
+            <button 
+              onClick={() => setView('wallet')}
+              className="flex items-center gap-1.5 bg-yellow-50 hover:bg-yellow-100 text-yellow-800 px-2.5 py-0.5 rounded-full font-black border border-yellow-200 shadow-sm cursor-pointer transition-all hover:scale-105"
+            >
+              <CardIcon className="w-3.5 h-3.5" />
+              <span>Wallet: ₹{walletBalance}</span>
+            </button>
           </div>
         </div>
       </div>
@@ -908,6 +1331,7 @@ export default function LandingPage() {
             <button onClick={() => setView('categories')} className={`hover:text-yellow-500 transition-colors cursor-pointer ${view === 'categories' ? 'text-yellow-500 font-bold' : ''}`}>Categories</button>
             <button onClick={() => setView('wishlist')} className={`hover:text-yellow-500 transition-colors cursor-pointer ${view === 'wishlist' ? 'text-yellow-500 font-bold' : ''}`}>Wishlist</button>
             <button onClick={() => setView('orders')} className={`hover:text-yellow-500 transition-colors cursor-pointer ${view === 'orders' ? 'text-yellow-500 font-bold' : ''}`}>Orders Page</button>
+            <button onClick={() => setView('wallet')} className={`hover:text-yellow-500 transition-colors cursor-pointer ${view === 'wallet' ? 'text-yellow-500 font-bold' : ''}`}>My Wallet & Rewards</button>
           </div>
 
           <div className="flex items-center gap-4 text-xs text-slate-600">
@@ -1606,100 +2030,252 @@ export default function LandingPage() {
           <div className="flex items-center gap-2 text-xs text-slate-400 mb-6">
             <button onClick={handleLogoClick} className="hover:text-slate-855 cursor-pointer">Home</button>
             <ChevronRight className="w-3 h-3" />
-            <span className="text-slate-800 font-bold">Shop Catalog</span>
+            <button onClick={() => setSelectedStore(null)} className="hover:text-slate-855 cursor-pointer">Stores</button>
+            {selectedStore && (
+              <>
+                <ChevronRight className="w-3 h-3" />
+                <span className="text-slate-800 font-bold">{selectedStore.name}</span>
+              </>
+            )}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            
-            {/* Sidebar Filters */}
-            <div className="lg:col-span-3 space-y-6">
-              <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-6">
-                <div>
-                  <h3 className="text-xs font-black uppercase text-slate-855 tracking-wider mb-3">Brands</h3>
-                  <div className="space-y-2">
-                    {['All', 'Apple', 'Samsung', 'Sony', 'HP', 'Herschel'].map((b) => (
-                      <button
-                        key={b}
-                        onClick={() => setShopFilterBrand(b)}
-                        className={`w-full text-left text-xs py-1.5 px-2.5 rounded transition-all cursor-pointer ${shopFilterBrand === b ? 'bg-yellow-500 font-bold text-slate-900' : 'text-slate-600 hover:bg-slate-50'}`}
-                      >
-                        {b}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-xs font-black uppercase text-slate-855 tracking-wider mb-3">Filter by Price</h3>
-                  <input 
-                    type="range" 
-                    min="10" 
-                    max="1000" 
-                    value={shopFilterPrice}
-                    onChange={(e) => setShopFilterPrice(Number(e.target.value))}
-                    className="w-full accent-yellow-500"
-                  />
-                  <div className="flex justify-between text-xs text-slate-500 mt-2 font-bold">
-                    <span>Min: $10</span>
-                    <span>Max: ${shopFilterPrice}</span>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-xs font-black uppercase text-slate-855 tracking-wider mb-3">Customer Rating</h3>
-                  <div className="space-y-2">
-                    {[5, 4, 3].map((r) => (
-                      <button
-                        key={r}
-                        onClick={() => setShopFilterRating(r)}
-                        className={`w-full text-left text-xs py-1 px-2 rounded flex items-center gap-1.5 cursor-pointer ${shopFilterRating === r ? 'bg-yellow-50 font-bold text-yellow-600 border border-yellow-200' : 'text-slate-600 hover:bg-slate-50'}`}
-                      >
-                        <span className="flex text-yellow-400">
-                          {[...Array(r)].map((_, i) => (
-                            <Star key={i} className="w-3 h-3 fill-current" />
-                          ))}
-                        </span>
-                        <span>& Up</span>
-                      </button>
-                    ))}
-                    {shopFilterRating > 0 && (
-                      <button onClick={() => setShopFilterRating(0)} className="text-[10px] text-slate-400 hover:text-red-500 underline font-bold cursor-pointer">Clear Rating Filter</button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Product Catalog Grid */}
-            <div className="lg:col-span-9 space-y-6">
+          {!selectedStore ? (
+            /* STORE SELECTION PANEL WITH SIDEBAR AND PREMIUM CARDS */
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-[fadeIn_0.35s_ease-out]">
               
-              {/* Sort & Stats Bar */}
-              <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-                <p className="text-xs text-slate-500">Showing <span className="font-bold text-slate-800">{filteredProducts.length}</span> products matching parameters</p>
-                
-                <div className="flex items-center gap-3 text-xs">
-                  <span className="text-slate-400">Sort by:</span>
-                  <select 
-                    value={shopSortOrder}
-                    onChange={(e) => setShopSortOrder(e.target.value)}
-                    className="border border-slate-200 px-3 py-1.5 rounded focus:outline-none bg-slate-50 text-slate-700 font-bold text-xs"
-                  >
-                    <option value="featured">Featured</option>
-                    <option value="low-high">Price: Low to High</option>
-                    <option value="high-low">Price: High to Low</option>
-                    <option value="rating">Rating</option>
-                  </select>
+              {/* Store Sidebar Filters */}
+              <div className="lg:col-span-3 space-y-6">
+                <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-6 shadow-sm">
+                  <div>
+                    <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider mb-3">Select Location</h3>
+                    <div className="space-y-1">
+                      {['Mumbai', 'Delhi', 'Bangalore', 'Kolkata'].map((area) => (
+                        <button
+                          key={area}
+                          onClick={() => setSelectedArea(area as any)}
+                          className={`w-full text-left text-xs py-2.5 px-3.5 rounded-xl transition-all cursor-pointer font-bold flex items-center justify-between ${selectedArea === area ? 'bg-yellow-500 text-slate-900 shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}
+                        >
+                          <span>{area}</span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${selectedArea === area ? 'bg-yellow-600 text-yellow-50' : 'bg-slate-100 text-slate-500'}`}>
+                            {mockStores.filter(s => s.area === area).length}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100 space-y-3">
+                    <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">Auto-Detect</h3>
+                    <button
+                      onClick={() => {
+                        setLocating(true);
+                        setTimeout(() => {
+                          const areas: ('Mumbai' | 'Delhi' | 'Bangalore' | 'Kolkata')[] = ['Mumbai', 'Delhi', 'Bangalore', 'Kolkata'];
+                          const randomArea = areas[Math.floor(Math.random() * areas.length)];
+                          setSelectedArea(randomArea);
+                          setLocating(false);
+                          alert(`Located! Your current area is set to ${randomArea}.`);
+                        }, 1000);
+                      }}
+                      disabled={locating}
+                      className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      <MapPin className="w-3.5 h-3.5" />
+                      {locating ? 'Locating...' : 'Use Current Location'}
+                    </button>
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-100 space-y-2.5 text-xs text-slate-400 font-semibold">
+                    <p className="flex justify-between items-center">
+                      <span>Active Region:</span> 
+                      <span className="text-slate-800 font-bold bg-slate-100 px-2 py-0.5 rounded">{selectedArea}</span>
+                    </p>
+                    <p className="flex justify-between items-center">
+                      <span>Wallet Perks:</span> 
+                      <span className="text-emerald-600 font-black bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">5% Cashback</span>
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {/* Grid List with Image on Top */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                {filteredProducts.map((p) => (
-                  <ProductCard key={p.id} product={p} />
-                ))}
+              {/* Stores Grid Column */}
+              <div className="lg:col-span-9 space-y-6">
+                <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <h2 className="text-lg font-black tracking-tight">Available Shops in {selectedArea}</h2>
+                    <p className="text-xs text-slate-350 font-medium">Discover handpicked, verified shops nearby with rewards perks active.</p>
+                  </div>
+                  <span className="bg-yellow-500 text-slate-950 font-black text-xs px-3.5 py-1.5 rounded-full shadow-sm self-start sm:self-auto">
+                    {mockStores.filter(store => store.area === selectedArea).length} Stores Found
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {mockStores
+                    .filter((store) => store.area === selectedArea)
+                    .map((store) => (
+                      <div key={store.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-yellow-500 hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
+                        <div className="relative h-44 bg-slate-100 overflow-hidden">
+                          <img src={store.img} alt={store.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-transparent" />
+                          
+                          <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md border border-white/10 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span>REWARDS ACTIVE</span>
+                          </div>
+
+                          <div className="absolute top-3 right-3 bg-yellow-500 text-slate-950 text-xs font-black px-2.5 py-0.5 rounded-xl flex items-center gap-1 shadow-md">
+                            ★ {store.rating}
+                          </div>
+
+                          <div className="absolute bottom-3 left-4 text-white space-y-1">
+                            <span className="text-[8px] font-extrabold uppercase bg-yellow-500 text-slate-950 px-2 py-0.5 rounded">{store.area}</span>
+                            <h3 className="font-black text-base drop-shadow-sm tracking-tight">{store.name}</h3>
+                          </div>
+                        </div>
+                        
+                        <div className="p-5 flex-grow flex flex-col justify-between space-y-4 text-xs">
+                          <div className="space-y-2">
+                            <p className="text-slate-500 font-medium leading-relaxed">{store.address}</p>
+                            <div className="flex justify-between items-center text-[10px] text-slate-450 border-t border-slate-50 pt-2.5 font-semibold">
+                              <span>Tel: {store.phone}</span>
+                              <span className="text-slate-800 font-bold">{store.products.length} Products Available</span>
+                            </div>
+                          </div>
+                          
+                          <button
+                            onClick={() => setSelectedStore(store)}
+                            className="w-full bg-slate-900 group-hover:bg-yellow-500 group-hover:text-slate-900 text-white font-bold text-xs py-3 rounded-xl transition-all text-center cursor-pointer shadow-sm flex items-center justify-center gap-1"
+                          >
+                            <span>Explore Store</span>
+                            <ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            /* STORE CATALOG VIEW WITH STORE DETAIL HEADER BANNER */
+            <div className="space-y-8 animate-[fadeIn_0.35s_ease-out]">
+              <div className="relative rounded-2xl overflow-hidden shadow-lg border border-slate-200">
+                <div className="absolute inset-0 bg-slate-900/45 z-10" />
+                <img src={selectedStore.banner} alt={selectedStore.name} className="w-full h-48 object-cover" />
+                <button
+                  onClick={() => setSelectedStore(null)}
+                  className="absolute top-4 left-4 z-20 bg-white/90 hover:bg-white text-slate-800 text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all shadow cursor-pointer"
+                >
+                  ← Back to Stores
+                </button>
+                
+                <div className="absolute bottom-5 left-6 z-20 text-white space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] font-black uppercase bg-yellow-500 text-slate-950 px-2 py-0.5 rounded-lg">
+                      ★ {selectedStore.rating}
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-200 bg-black/40 px-2 py-0.5 rounded-lg border border-white/10">
+                      {selectedStore.area}
+                    </span>
+                  </div>
+                  <h1 className="text-2xl md:text-3xl font-black tracking-tight">{selectedStore.name}</h1>
+                  <p className="text-xs text-slate-200 font-medium opacity-90 max-w-xl">{selectedStore.address} • {selectedStore.phone}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                {/* Sidebar Filters */}
+                <div className="lg:col-span-3 space-y-6">
+                  <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-6">
+                    <div>
+                      <h3 className="text-xs font-black uppercase text-slate-855 tracking-wider mb-3">Brands</h3>
+                      <div className="space-y-2">
+                        {['All', 'Apple', 'Samsung', 'Sony', 'HP', 'Herschel'].map((b) => (
+                          <button
+                            key={b}
+                            onClick={() => setShopFilterBrand(b)}
+                            className={`w-full text-left text-xs py-1.5 px-2.5 rounded transition-all cursor-pointer ${shopFilterBrand === b ? 'bg-yellow-500 font-bold text-slate-900' : 'text-slate-600 hover:bg-slate-50'}`}
+                          >
+                            {b}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-xs font-black uppercase text-slate-855 tracking-wider mb-3">Filter by Price</h3>
+                      <input 
+                        type="range" 
+                        min="10" 
+                        max="1000" 
+                        value={shopFilterPrice}
+                        onChange={(e) => setShopFilterPrice(Number(e.target.value))}
+                        className="w-full accent-yellow-500"
+                      />
+                      <div className="flex justify-between text-xs text-slate-500 mt-2 font-bold">
+                        <span>Min: $10</span>
+                        <span>Max: ${shopFilterPrice}</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-xs font-black uppercase text-slate-855 tracking-wider mb-3">Customer Rating</h3>
+                      <div className="space-y-2">
+                        {[5, 4, 3].map((r) => (
+                          <button
+                            key={r}
+                            onClick={() => setShopFilterRating(r)}
+                            className={`w-full text-left text-xs py-1 px-2 rounded flex items-center gap-1.5 cursor-pointer ${shopFilterRating === r ? 'bg-yellow-50 font-bold text-yellow-600 border border-yellow-200' : 'text-slate-600 hover:bg-slate-50'}`}
+                          >
+                            <span className="flex text-yellow-400">
+                              {[...Array(r)].map((_, i) => (
+                                <Star key={i} className="w-3 h-3 fill-current" />
+                              ))}
+                            </span>
+                            <span>& Up</span>
+                          </button>
+                        ))}
+                        {shopFilterRating > 0 && (
+                          <button onClick={() => setShopFilterRating(0)} className="text-[10px] text-slate-400 hover:text-red-500 underline font-bold cursor-pointer">Clear Rating Filter</button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Product Catalog Grid */}
+                <div className="lg:col-span-9 space-y-6">
+                  
+                  {/* Sort & Stats Bar */}
+                  <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <p className="text-xs text-slate-500">Showing <span className="font-bold text-slate-800">{filteredProducts.length}</span> products matching parameters</p>
+                    
+                    <div className="flex items-center gap-3 text-xs">
+                      <span className="text-slate-400">Sort by:</span>
+                      <select 
+                        value={shopSortOrder}
+                        onChange={(e) => setShopSortOrder(e.target.value)}
+                        className="border border-slate-200 px-3 py-1.5 rounded focus:outline-none bg-slate-50 text-slate-700 font-bold text-xs"
+                      >
+                        <option value="featured">Featured</option>
+                        <option value="low-high">Price: Low to High</option>
+                        <option value="high-low">Price: High to Low</option>
+                        <option value="rating">Rating</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Grid List with Image on Top */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    {filteredProducts.map((p) => (
+                      <ProductCard key={p.id} product={p} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -2304,6 +2880,253 @@ export default function LandingPage() {
         </div>
       )}
 
+      {/* VIEW: WALLET & REWARDS DASHBOARD */}
+      {view === 'wallet' && (
+        <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 animate-fadeIn">
+          {/* Page Title & Back Button */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                <Coins className="w-7 h-7 text-yellow-500" />
+                My Rewards Wallet
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">Manage your cash balance, track cashback ledger, and win daily reward points.</p>
+            </div>
+            <button 
+              onClick={() => setView('shop')}
+              className="flex items-center gap-1.5 px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-xs font-bold rounded-lg transition-all text-slate-700 shadow-sm cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" /> Back to Shop
+            </button>
+          </div>
+
+          {/* Grid Layout: Wallet Card, Daily Rewards, load money */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* COLUMN 1: Glassmorphism Wallet Credit Card */}
+            <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-950 text-white rounded-2xl p-6 shadow-xl border border-slate-800 flex flex-col justify-between min-h-[220px] transition-transform hover:-translate-y-1">
+              {/* Background Glows */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-3xl pointer-events-none"></div>
+              <div className="absolute bottom-0 left-0 w-32 h-32 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+              {/* Card Header */}
+              <div className="flex justify-between items-start relative z-10">
+                <div className="space-y-1">
+                  <p className="text-[10px] tracking-wider uppercase font-bold text-indigo-300">Amera Platinum Card</p>
+                  <p className="text-xs font-medium text-slate-400">Exclusive Reward Tier</p>
+                </div>
+                <div className="flex items-center gap-1.5 bg-yellow-500/20 text-yellow-300 px-2.5 py-1 rounded-full text-[9px] font-black border border-yellow-500/30 uppercase tracking-wider">
+                  <Award className="w-3.5 h-3.5" /> VIP member
+                </div>
+              </div>
+
+              {/* Card Balance */}
+              <div className="my-4 relative z-10">
+                <p className="text-[10px] text-slate-400 uppercase font-black tracking-wider">Available Balance</p>
+                <div className="flex items-baseline gap-1 mt-0.5">
+                  <span className="text-3xl font-black tracking-tight text-white">₹{walletBalance.toFixed(2)}</span>
+                  <span className="text-xs font-bold text-yellow-400">INR</span>
+                </div>
+              </div>
+
+              {/* Card Footer */}
+              <div className="flex justify-between items-end mt-4 relative z-10 border-t border-slate-800/80 pt-4">
+                <div>
+                  <p className="text-[9px] uppercase text-indigo-300 font-bold">Card Holder</p>
+                  <p className="text-xs font-black text-white mt-0.5 uppercase tracking-wide">Loyal Customer</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[9px] uppercase text-indigo-300 font-bold">Account Status</p>
+                  <p className="text-xs font-black text-emerald-400 mt-0.5 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span> Active
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* COLUMN 2: Daily Scratch Card */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="p-2 bg-yellow-50 text-yellow-600 rounded-lg">
+                    <Gift className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Daily Rewards Game</h3>
+                </div>
+                <p className="text-xs text-slate-500">Claim your daily surprise loyalty rewards. Scratch or click below to reveal your credit points (₹15 to ₹75)!</p>
+              </div>
+
+              <div className="my-6 flex justify-center">
+                {!claimedDailyScratch ? (
+                  <button 
+                    onClick={handleScratchClaim}
+                    className="w-full max-w-[240px] aspect-[16/9] border-2 border-dashed border-yellow-400 bg-yellow-50/50 hover:bg-yellow-50 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer transition-all hover:scale-102 group relative overflow-hidden active:scale-98"
+                  >
+                    <Sparkles className="w-8 h-8 text-yellow-500 animate-bounce" />
+                    <span className="text-xs font-black text-yellow-800 tracking-wider">TAP TO SCRATCH</span>
+                    <span className="text-[9px] text-yellow-600 font-bold">1 daily claim remaining</span>
+                  </button>
+                ) : (
+                  <div className="w-full max-w-[240px] aspect-[16/9] bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 rounded-xl flex flex-col items-center justify-center relative overflow-hidden animate-scaleIn">
+                    <div className="absolute top-0 right-0 p-1 bg-yellow-500 text-white rounded-bl text-[8px] font-black uppercase">CLAIMED</div>
+                    <Sparkles className="w-6 h-6 text-yellow-500 mb-1" />
+                    <p className="text-[10px] font-bold text-slate-500 uppercase">You Won</p>
+                    <p className="text-2xl font-black text-slate-900 mt-0.5">₹{scratchReward}</p>
+                    <p className="text-[9px] text-emerald-600 font-bold mt-1">Credited to Wallet Balance</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="text-[10px] text-slate-400 text-center">
+                Refreshes every 24 hours. Points can be redeemed on checkouts.
+              </div>
+            </div>
+
+            {/* COLUMN 3: Recharge & Promo Code */}
+            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm space-y-6">
+              {/* Promo Code Tab */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+                    <BadgePercent className="w-5 h-5 text-indigo-650" />
+                  </div>
+                  <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider">Redeem Reward Code</h3>
+                </div>
+                <form onSubmit={handleRedeemPromoCode} className="flex gap-2">
+                  <input 
+                    type="text" 
+                    placeholder="e.g. WELCOME100" 
+                    value={promoCodeInput}
+                    onChange={(e) => setPromoCodeInput(e.target.value)}
+                    className="flex-1 px-3 py-2 border border-slate-200 rounded text-xs font-mono uppercase focus:outline-none focus:border-indigo-500 text-slate-800"
+                  />
+                  <button 
+                    type="submit" 
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-755 text-white text-xs font-bold rounded transition-colors cursor-pointer"
+                  >
+                    Apply
+                  </button>
+                </form>
+                {promoError && <p className="text-[10px] text-rose-500 font-bold">{promoError}</p>}
+                {promoSuccess && <p className="text-[10px] text-emerald-600 font-bold">{promoSuccess}</p>}
+                <div className="flex gap-2.5 text-[9px] text-indigo-500 font-bold">
+                  <span>* Try: <code className="bg-indigo-50 px-1 py-0.5 rounded font-mono">WELCOME100</code></span>
+                  <span>* Try: <code className="bg-indigo-50 px-1 py-0.5 rounded font-mono">FESTIVE250</code></span>
+                </div>
+              </div>
+
+              <hr className="border-slate-100" />
+
+              {/* Add Cash tab */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <Coins className="w-4 h-4 text-slate-500" /> Recharge / Add Funds
+                </h3>
+                <form onSubmit={handleLoadFunds} className="space-y-3">
+                  <div className="relative">
+                    <span className="absolute left-3 top-2.5 text-xs text-slate-400 font-bold">₹</span>
+                    <input 
+                      type="number" 
+                      placeholder="Enter amount" 
+                      value={loadAmount}
+                      onChange={(e) => setLoadAmount(e.target.value)}
+                      className="w-full pl-6 pr-3 py-2 border border-slate-200 rounded text-xs font-bold text-slate-800 focus:outline-none focus:border-yellow-500"
+                      min="1"
+                    />
+                  </div>
+
+                  {/* Quick Values */}
+                  <div className="flex gap-2">
+                    {['100', '500', '1000'].map(val => (
+                      <button 
+                        key={val} 
+                        type="button" 
+                        onClick={() => setLoadAmount(val)}
+                        className="flex-1 py-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-[10px] font-bold rounded transition-colors text-slate-700 cursor-pointer"
+                      >
+                        + ₹{val}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Payment Options */}
+                  <div className="grid grid-cols-2 gap-2 text-[10px] font-bold">
+                    <button 
+                      type="button"
+                      onClick={() => setPaymentMethod('upi')}
+                      className={`py-2 px-3 rounded border text-center cursor-pointer transition-colors ${paymentMethod === 'upi' ? 'bg-yellow-50 border-yellow-400 text-yellow-800 font-extrabold' : 'bg-white border-slate-200 text-slate-500'}`}
+                    >
+                      UPI / Scan Code
+                    </button>
+                    <button 
+                      type="button"
+                      onClick={() => setPaymentMethod('card')}
+                      className={`py-2 px-3 rounded border text-center cursor-pointer transition-colors ${paymentMethod === 'card' ? 'bg-yellow-50 border-yellow-400 text-yellow-800 font-extrabold' : 'bg-white border-slate-200 text-slate-500'}`}
+                    >
+                      Credit / Debit Card
+                    </button>
+                  </div>
+
+                  <button 
+                    type="submit" 
+                    disabled={loadingFunds}
+                    className="w-full py-2.5 bg-yellow-500 hover:bg-yellow-600 disabled:bg-yellow-300 text-slate-900 font-black text-xs rounded transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    {loadingFunds ? (
+                      <>
+                        <RotateCcw className="w-3.5 h-3.5 animate-spin" /> Simulating Gateway...
+                      </>
+                    ) : (
+                      'Proceed to Recharge'
+                    )}
+                  </button>
+                </form>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Bottom Row: Detailed Wallet Ledger (Transaction History) */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+            <h3 className="text-xs font-black text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-slate-500" />
+              Wallet Transaction History
+            </h3>
+            
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-100 text-slate-400 uppercase text-[9px] font-bold tracking-wider">
+                    <th className="pb-3 pl-2">Transaction ID</th>
+                    <th className="pb-3">Date & Time</th>
+                    <th className="pb-3">Description</th>
+                    <th className="pb-3">Type</th>
+                    <th className="pb-3 text-right pr-2">Amount</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50 text-slate-700">
+                  {walletTransactions.map(tx => (
+                    <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors">
+                      <td className="py-3 pl-2 font-mono font-bold text-slate-800">{tx.id}</td>
+                      <td className="py-3 text-[11px] text-slate-400">{tx.date}</td>
+                      <td className="py-3 font-medium text-slate-600">{tx.description}</td>
+                      <td className="py-3">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${tx.type === 'credit' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
+                          {tx.type === 'credit' ? 'Credit' : 'Debit'}
+                        </span>
+                      </td>
+                      <td className={`py-3 text-right pr-2 font-black text-sm ${tx.type === 'credit' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {tx.type === 'credit' ? '+' : '-'}₹{tx.amount.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* VIEW: 3-STEP CHECKOUT PAGE */}
       {view === 'checkout' && (
         <div className="max-w-4xl mx-auto px-4 py-8">
@@ -2480,6 +3303,26 @@ export default function LandingPage() {
                   <p><span className="font-bold text-slate-455">Payment method:</span> Sandbox Credit Card (Ending in {paymentCardNumber.slice(-4) || '4444'})</p>
                 </div>
 
+                {walletBalance > 0 && (
+                  <div className="bg-yellow-50 border border-yellow-150 p-4 rounded-xl flex items-center justify-between text-xs my-4">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="redeemPoints"
+                        checked={redeemPoints}
+                        onChange={(e) => setRedeemPoints(e.target.checked)}
+                        className="accent-yellow-500 w-4 h-4 cursor-pointer"
+                      />
+                      <label htmlFor="redeemPoints" className="font-bold text-slate-700 cursor-pointer">
+                        Redeem Wallet Rewards (Balance: ₹{walletBalance})
+                      </label>
+                    </div>
+                    <span className="font-mono font-bold text-yellow-800">
+                      Save ₹{Math.min(walletBalance, Math.floor(cartTotal + 15))}
+                    </span>
+                  </div>
+                )}
+
                 <div className="divide-y divide-slate-100">
                   {cart.map(item => (
                     <div key={item.product.id} className="flex justify-between items-center py-2 text-xs">
@@ -2495,9 +3338,20 @@ export default function LandingPage() {
                     <span>GST Tax</span>
                     <span>$5.00</span>
                   </div>
-                  <div className="flex justify-between py-2 text-sm font-black text-slate-900 pt-3">
+                  {redeemPoints && (
+                    <div className="flex justify-between py-2 text-xs font-semibold text-red-500">
+                      <span>Wallet Rewards Redeemed</span>
+                      <span>-₹{Math.min(walletBalance, Math.floor(cartTotal + 15)).toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between py-2 text-sm font-black text-slate-900 pt-3 border-t border-slate-150">
                     <span>Total Sum</span>
-                    <span>${(cartTotal + 15).toFixed(2)}</span>
+                    <span>
+                      ${(
+                        (cartTotal + 15) - 
+                        (redeemPoints ? Math.min(walletBalance, Math.floor(cartTotal + 15)) : 0)
+                      ).toFixed(2)}
+                    </span>
                   </div>
                 </div>
 
@@ -2538,6 +3392,12 @@ export default function LandingPage() {
             <p className="flex justify-between"><span>Date:</span> <span className="font-medium text-slate-800">{placedOrderInfo.date}</span></p>
             <p className="flex justify-between"><span>Shipping total paid:</span> <span className="font-bold text-slate-900">${placedOrderInfo.total.toFixed(2)}</span></p>
             <p className="flex justify-between"><span>Payment status:</span> <span className="text-green-600 font-bold bg-green-50 px-2 py-0.5 rounded">Paid</span></p>
+            {placedOrderInfo.pointsRedeemed !== undefined && placedOrderInfo.pointsRedeemed > 0 && (
+              <p className="flex justify-between text-red-600 font-semibold"><span>Rewards Redeemed:</span> <span>-₹{placedOrderInfo.pointsRedeemed}</span></p>
+            )}
+            {placedOrderInfo.pointsEarned !== undefined && placedOrderInfo.pointsEarned > 0 && (
+              <p className="flex justify-between text-green-600 font-semibold"><span>Rewards Earned:</span> <span>+₹{placedOrderInfo.pointsEarned}</span></p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">

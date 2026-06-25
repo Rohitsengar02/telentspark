@@ -601,6 +601,42 @@ export default function AdminDashboard() {
   ]);
   const [newTaskTitle, setNewTaskTitle] = useState('');
 
+  // Subscriptions & Rewards states
+  const [userWallets, setUserWallets] = useState([
+    { id: 'CUST-101', name: 'Global Distribs (Anil Mehta)', balance: 1250, segment: 'Premium VIP' },
+    { id: 'CUST-102', name: 'Nexus Pharma (Dr. Sarah Joseph)', balance: 300, segment: 'Active Partner' },
+    { id: 'CUST-103', name: 'Alpha Traders (Suresh Kumar)', balance: 1500, segment: 'Premium VIP' },
+    { id: 'CUST-104', name: 'Jupiter Agri Foods (Manpreet Singh)', balance: 0, segment: 'Retail Partner' },
+    { id: 'CUST-105', name: 'Lotus Laboratories (Rashmi Sen)', balance: 50, segment: 'Churn Risk' }
+  ]);
+  const [selectedWalletUser, setSelectedWalletUser] = useState('CUST-101');
+  const [walletAdjustType, setWalletAdjustType] = useState<'credit' | 'debit'>('credit');
+  const [walletAdjustAmount, setWalletAdjustAmount] = useState('');
+  const [walletAdjustReason, setWalletAdjustReason] = useState('');
+
+  const [subscriptionPlans, setSubscriptionPlans] = useState([
+    { id: 'SUB-BRONZE', name: 'Bronze Standard', price: 0, cashback: 1, shipping: 'Standard (Charged)', subscribers: 145 },
+    { id: 'SUB-SILVER', name: 'Silver Pro', price: 299, cashback: 3, shipping: 'Free over ₹500', subscribers: 84 },
+    { id: 'SUB-GOLD', name: 'Gold Elite', price: 599, cashback: 5, shipping: 'Free Priority', subscribers: 112 },
+    { id: 'SUB-PLATINUM', name: 'Platinum VIP', price: 999, cashback: 10, shipping: 'Free Instant', subscribers: 39 }
+  ]);
+  const [showSubModal, setShowSubModal] = useState(false);
+  const [subForm, setSubForm] = useState({ name: '', price: '', cashback: '5', shipping: 'Free Priority' });
+
+  const [coupons, setCoupons] = useState([
+    { code: 'WELCOME100', reward: 100, status: 'Active', redemptions: 142, expiry: '2026-12-31' },
+    { code: 'FESTIVE250', reward: 250, status: 'Active', redemptions: 64, expiry: '2026-09-30' },
+    { code: 'SUPER500', reward: 500, status: 'Inactive', redemptions: 12, expiry: '2026-06-01' }
+  ]);
+  const [couponForm, setCouponForm] = useState({ code: '', reward: '', status: 'Active', expiry: '' });
+
+  const [rewardConfig, setRewardConfig] = useState({
+    cashbackRate: 5,
+    welcomeBonus: 400,
+    referralBonus: 150,
+    pointValueInInr: 1
+  });
+
   // Sidebar structures
   const erpSections: ERPSection[] = [
     {
@@ -612,6 +648,16 @@ export default function AdminDashboard() {
         { name: 'Revenue Dashboard' },
         { name: 'Team Performance' },
         { name: 'Daily Activity' }
+      ]
+    },
+    {
+      name: 'Subscriptions & Rewards',
+      icon: Award,
+      subsections: [
+        { name: 'User Wallets' },
+        { name: 'Subscription Plans' },
+        { name: 'Coupons & Promos' },
+        { name: 'Reward Policies' }
       ]
     },
     {
@@ -804,6 +850,77 @@ export default function AdminDashboard() {
       phone: '',
       notes: ''
     });
+  };
+
+  // Subscriptions & Rewards Handlers
+  const handleAdjustWallet = (e: React.FormEvent) => {
+    e.preventDefault();
+    const amt = parseFloat(walletAdjustAmount);
+    if (isNaN(amt) || amt <= 0) {
+      alert("Please enter a valid amount");
+      return;
+    }
+    setUserWallets(prev => prev.map(w => {
+      if (w.id === selectedWalletUser) {
+        const newBal = walletAdjustType === 'credit' ? w.balance + amt : Math.max(0, w.balance - amt);
+        return { ...w, balance: newBal };
+      }
+      return w;
+    }));
+    addActivity(`${walletAdjustType === 'credit' ? 'Credited' : 'Debited'} ₹${amt} for customer wallet: ${selectedWalletUser}`, 'payment');
+    alert(`Successfully ${walletAdjustType === 'credit' ? 'credited' : 'debited'} ₹${amt} for selected user wallet.`);
+    setWalletAdjustAmount('');
+    setWalletAdjustReason('');
+  };
+
+  const handleAddSubscriptionPlan = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subForm.name || !subForm.price) {
+      alert("Please enter plan name and price");
+      return;
+    }
+    setSubscriptionPlans(prev => [
+      ...prev,
+      {
+        id: `SUB-${Math.floor(1000 + Math.random() * 9000)}`,
+        name: subForm.name,
+        price: parseFloat(subForm.price) || 0,
+        cashback: parseFloat(subForm.cashback) || 0,
+        shipping: subForm.shipping,
+        subscribers: 0
+      }
+    ]);
+    addActivity(`New Subscription Plan Created: ${subForm.name} (₹${subForm.price}/mo)`, 'payment');
+    setShowSubModal(false);
+    setSubForm({ name: '', price: '', cashback: '5', shipping: 'Free Priority' });
+    alert("Subscription plan created successfully!");
+  };
+
+  const handleCreateCoupon = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!couponForm.code || !couponForm.reward) {
+      alert("Please fill in code and reward amount");
+      return;
+    }
+    setCoupons(prev => [
+      ...prev,
+      {
+        code: couponForm.code.toUpperCase().trim(),
+        reward: parseFloat(couponForm.reward) || 0,
+        status: couponForm.status,
+        redemptions: 0,
+        expiry: couponForm.expiry || '2026-12-31'
+      }
+    ]);
+    addActivity(`New coupon generated: ${couponForm.code} (Value: ₹${couponForm.reward})`, 'payment');
+    setCouponForm({ code: '', reward: '', status: 'Active', expiry: '' });
+    alert("Promo code generated successfully!");
+  };
+
+  const handleSaveRewardConfig = (e: React.FormEvent) => {
+    e.preventDefault();
+    addActivity(`Loyalty points rule updated: Welcome reward ₹${rewardConfig.welcomeBonus}, Cashback: ${rewardConfig.cashbackRate}%`, 'payment');
+    alert("Loyalty and Reward Policies updated successfully!");
   };
 
   // AI Lead Scorer logic
@@ -4578,6 +4695,417 @@ export default function AdminDashboard() {
               </div>
             </div>
           )}
+
+          {/* SUBSCRIPTIONS & REWARDS */}
+          {activeSection === 'Subscriptions & Rewards' && (
+            <div className="space-y-6 animate-[fadeIn_0.35s_ease-out]">
+              
+              {/* User Wallets */}
+              {activeSubSection === 'User Wallets' && (
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800">Customer Wallet & Balance Control</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">View and adjust user reward wallets, audit ledger transaction values.</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Wallets List */}
+                    <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                      <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Active Wallets Table</h4>
+                      <div className="overflow-x-auto border border-slate-100 rounded-xl">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="bg-slate-50 text-slate-600 border-b border-slate-150 font-bold">
+                              <th className="p-3">User ID</th>
+                              <th className="p-3">Customer Name</th>
+                              <th className="p-3">Segment</th>
+                              <th className="p-3 text-right">Balance</th>
+                              <th className="p-3 text-center">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
+                            {userWallets.map((wallet) => (
+                              <tr key={wallet.id} className="hover:bg-slate-50 transition-colors">
+                                <td className="p-3 font-mono text-[10px] text-slate-400 font-bold">{wallet.id}</td>
+                                <td className="p-3 text-slate-900 font-bold">{wallet.name}</td>
+                                <td className="p-3">
+                                  <span className={`px-2 py-0.5 text-[9px] rounded font-bold ${
+                                    wallet.segment === 'Premium VIP' ? 'bg-amber-50 text-amber-600 border border-amber-200' :
+                                    wallet.segment === 'Active Partner' ? 'bg-blue-50 text-blue-650 border border-blue-200' :
+                                    wallet.segment === 'Churn Risk' ? 'bg-red-50 text-red-600 border border-red-200' :
+                                    'bg-slate-50 text-slate-600 border border-slate-200'
+                                  }`}>
+                                    {wallet.segment}
+                                  </span>
+                                </td>
+                                <td className="p-3 text-right font-black text-slate-900">₹{wallet.balance}</td>
+                                <td className="p-3 text-center">
+                                  <button
+                                    onClick={() => {
+                                      setSelectedWalletUser(wallet.id);
+                                    }}
+                                    className={`px-2.5 py-1 text-[10px] font-bold rounded-lg transition-all ${
+                                      selectedWalletUser === wallet.id
+                                        ? 'bg-blue-600 text-white'
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                    }`}
+                                  >
+                                    Adjust
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Balance Adjuster Form */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                      <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Adjust Selected Wallet</h4>
+                      
+                      {(() => {
+                        const activeWallet = userWallets.find(w => w.id === selectedWalletUser);
+                        if (!activeWallet) return <p className="text-xs text-slate-400 italic">Select a user to adjust balance.</p>;
+                        return (
+                          <form onSubmit={handleAdjustWallet} className="space-y-4 text-xs">
+                            <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-xl space-y-1">
+                              <span className="text-[10px] text-slate-400 font-bold uppercase block">Selected Customer</span>
+                              <strong className="text-sm font-bold text-slate-800 block">{activeWallet.name}</strong>
+                              <span className="text-xs text-slate-500 block">Current Balance: <strong className="text-slate-950 font-extrabold">₹{activeWallet.balance}</strong></span>
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="font-bold text-slate-700">Adjustment Type</label>
+                              <div className="grid grid-cols-2 gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => setWalletAdjustType('credit')}
+                                  className={`py-2 rounded-xl font-bold border transition-all ${
+                                    walletAdjustType === 'credit'
+                                      ? 'bg-emerald-50 text-emerald-600 border-emerald-350 shadow-sm'
+                                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                  }`}
+                                >
+                                  Credit (+)
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setWalletAdjustType('debit')}
+                                  className={`py-2 rounded-xl font-bold border transition-all ${
+                                    walletAdjustType === 'debit'
+                                      ? 'bg-red-50 text-red-600 border-red-350 shadow-sm'
+                                      : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                  }`}
+                                >
+                                  Debit (-)
+                                </button>
+                              </div>
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="font-bold text-slate-700">Amount (₹)</label>
+                              <input
+                                type="number"
+                                required
+                                min="1"
+                                value={walletAdjustAmount}
+                                onChange={(e) => setWalletAdjustAmount(e.target.value)}
+                                placeholder="e.g. 250"
+                                className="w-full border border-slate-200 bg-white text-slate-800 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-500"
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="font-bold text-slate-700">Adjustment Reason</label>
+                              <input
+                                type="text"
+                                required
+                                value={walletAdjustReason}
+                                onChange={(e) => setWalletAdjustReason(e.target.value)}
+                                placeholder="e.g. Goodwill gesture bonus"
+                                className="w-full border border-slate-200 bg-white text-slate-800 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-500"
+                              />
+                            </div>
+
+                            <button
+                              type="submit"
+                              className={`w-full py-2.5 rounded-xl font-bold text-white shadow-md transition-colors ${
+                                walletAdjustType === 'credit'
+                                  ? 'bg-emerald-600 hover:bg-emerald-500'
+                                  : 'bg-red-600 hover:bg-red-500'
+                              }`}
+                            >
+                              Apply Adjustment
+                            </button>
+                          </form>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Subscription Plans */}
+              {activeSubSection === 'Subscription Plans' && (
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800">VIP Subscription Configuration</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">Control pricing tiers, custom loyalty cashback rates, and special shipping options.</p>
+                    </div>
+                    <button
+                      onClick={() => setShowSubModal(true)}
+                      className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-3.5 py-2 text-xs font-bold shadow-md"
+                    >
+                      + Create Subscription Tier
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                    {subscriptionPlans.map((plan) => (
+                      <div key={plan.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4 hover:border-slate-350 transition-colors flex flex-col justify-between">
+                        <div>
+                          <div className="flex justify-between items-start">
+                            <span className="text-[9px] font-mono text-slate-400 font-bold">{plan.id}</span>
+                            <span className="text-[10px] bg-blue-50 text-blue-600 font-bold px-2 py-0.5 rounded-lg">
+                              {plan.subscribers} Subs
+                            </span>
+                          </div>
+                          <h4 className="text-sm font-extrabold text-slate-900 mt-2">{plan.name}</h4>
+                          <div className="mt-3.5 border-t border-slate-50 pt-3 space-y-2 text-xs text-slate-600">
+                            <div className="flex justify-between">
+                              <span>Monthly Cost</span>
+                              <strong className="text-slate-900">₹{plan.price}/mo</strong>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Earn Rate</span>
+                              <strong className="text-emerald-600">{plan.cashback}% Cashback</strong>
+                            </div>
+                            <div className="flex justify-between">
+                              <span>Shipping Perk</span>
+                              <strong className="text-slate-900 truncate max-w-[120px]" title={plan.shipping}>{plan.shipping}</strong>
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => alert(`Active subscriptions count: ${plan.subscribers} customers`)}
+                          className="w-full mt-4 py-2 border border-slate-150 hover:bg-slate-50 text-slate-600 rounded-xl text-xs font-bold transition-all"
+                        >
+                          Auditing Subscribers
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Coupons & Promos */}
+              {activeSubSection === 'Coupons & Promos' && (
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800">Coupon Code Management</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">Generate, audit, and activate/deactivate promotional codes for wallet rewards.</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Coupons Ledger */}
+                    <div className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                      <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Promotional Codes Ledger</h4>
+                      <div className="overflow-x-auto border border-slate-100 rounded-xl">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead>
+                            <tr className="bg-slate-50 text-slate-600 border-b border-slate-150 font-bold">
+                              <th className="p-3">Coupon Code</th>
+                              <th className="p-3">Reward Value</th>
+                              <th className="p-3">Expiry Date</th>
+                              <th className="p-3 text-center">Redemptions</th>
+                              <th className="p-3 text-center">Status</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
+                            {coupons.map((c) => (
+                              <tr key={c.code} className="hover:bg-slate-50 transition-colors">
+                                <td className="p-3 font-mono font-bold text-slate-900">{c.code}</td>
+                                <td className="p-3 font-extrabold text-emerald-600">₹{c.reward} Wallet Bal</td>
+                                <td className="p-3 text-slate-500">{c.expiry}</td>
+                                <td className="p-3 text-center font-bold text-slate-700">{c.redemptions}</td>
+                                <td className="p-3 text-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setCoupons(prev => prev.map(item => {
+                                        if (item.code === c.code) {
+                                          const nextStatus = item.status === 'Active' ? 'Inactive' : 'Active';
+                                          addActivity(`Coupon code status changed: ${c.code} is now ${nextStatus}`, 'payment');
+                                          return { ...item, status: nextStatus };
+                                        }
+                                        return item;
+                                      }));
+                                    }}
+                                    className={`px-2.5 py-0.5 text-[9px] rounded font-bold border transition-all ${
+                                      c.status === 'Active'
+                                        ? 'bg-emerald-50 text-emerald-655 border-emerald-250 hover:bg-emerald-100'
+                                        : 'bg-slate-50 text-slate-455 border-slate-255 hover:bg-slate-100'
+                                    }`}
+                                  >
+                                    {c.status}
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    {/* Generator Form */}
+                    <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                      <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Generate Promo Coupon</h4>
+                      <form onSubmit={handleCreateCoupon} className="space-y-4 text-xs">
+                        <div className="space-y-1">
+                          <label className="font-bold text-slate-700">Coupon Code</label>
+                          <input
+                            type="text"
+                            required
+                            value={couponForm.code}
+                            onChange={(e) => setCouponForm({ ...couponForm, code: e.target.value })}
+                            placeholder="e.g. MONSOON300"
+                            className="w-full border border-slate-200 bg-white text-slate-800 rounded-xl px-3 py-2 uppercase placeholder:normal-case focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="font-bold text-slate-700">Wallet Bonus Value (₹)</label>
+                          <input
+                            type="number"
+                            required
+                            min="10"
+                            value={couponForm.reward}
+                            onChange={(e) => setCouponForm({ ...couponForm, reward: e.target.value })}
+                            placeholder="e.g. 300"
+                            className="w-full border border-slate-200 bg-white text-slate-800 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="font-bold text-slate-700">Expiry Date</label>
+                          <input
+                            type="date"
+                            required
+                            value={couponForm.expiry}
+                            onChange={(e) => setCouponForm({ ...couponForm, expiry: e.target.value })}
+                            className="w-full border border-slate-200 bg-white text-slate-800 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="font-bold text-slate-700">Initial Status</label>
+                          <select
+                            value={couponForm.status}
+                            onChange={(e) => setCouponForm({ ...couponForm, status: e.target.value })}
+                            className="w-full border border-slate-200 bg-white text-slate-800 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-500"
+                          >
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                          </select>
+                        </div>
+
+                        <button
+                          type="submit"
+                          className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold shadow-md transition-colors"
+                        >
+                          Generate Code
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Reward Policies */}
+              {activeSubSection === 'Reward Policies' && (
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800">Reward Policy & Conversion Settings</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">Fine-tune signup credits, purchase cashback multiplier, and points valuation.</p>
+                    </div>
+                  </div>
+
+                  <div className="max-w-2xl bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                    <form onSubmit={handleSaveRewardConfig} className="space-y-5 text-xs">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="font-bold text-slate-700">Default Purchase Cashback (%)</label>
+                          <input
+                            type="number"
+                            required
+                            min="0"
+                            max="100"
+                            value={rewardConfig.cashbackRate}
+                            onChange={(e) => setRewardConfig({ ...rewardConfig, cashbackRate: parseInt(e.target.value) || 0 })}
+                            className="w-full border border-slate-200 bg-white text-slate-800 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="font-bold text-slate-700">Welcome Signup Bonus (points)</label>
+                          <input
+                            type="number"
+                            required
+                            min="0"
+                            value={rewardConfig.welcomeBonus}
+                            onChange={(e) => setRewardConfig({ ...rewardConfig, welcomeBonus: parseInt(e.target.value) || 0 })}
+                            className="w-full border border-slate-200 bg-white text-slate-800 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="font-bold text-slate-700">Referral Bounty Bonus (points)</label>
+                          <input
+                            type="number"
+                            required
+                            min="0"
+                            value={rewardConfig.referralBonus}
+                            onChange={(e) => setRewardConfig({ ...rewardConfig, referralBonus: parseInt(e.target.value) || 0 })}
+                            className="w-full border border-slate-200 bg-white text-slate-800 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="font-bold text-slate-700">1 Reward Point Value (in INR)</label>
+                          <input
+                            type="number"
+                            required
+                            min="0.1"
+                            step="0.1"
+                            value={rewardConfig.pointValueInInr}
+                            onChange={(e) => setRewardConfig({ ...rewardConfig, pointValueInInr: parseFloat(e.target.value) || 1 })}
+                            className="w-full border border-slate-200 bg-white text-slate-800 rounded-xl px-3 py-2 focus:outline-none focus:border-blue-500"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="pt-4 border-t border-slate-100 flex justify-end">
+                        <button
+                          type="submit"
+                          className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-5 py-2 font-bold shadow-md transition-colors"
+                        >
+                          Save Policies Configurations
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </main>
 
         {/* 3. STICKY RIGHT SIDEBAR */}
@@ -4808,6 +5336,94 @@ export default function AdminDashboard() {
                   className="flex-1 bg-blue-600 hover:bg-blue-500 text-white rounded-xl py-2 font-bold"
                 >
                   Save Lead
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* SUBSCRIPTION PLAN MODAL */}
+      {showSubModal && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between p-5 border-b border-slate-200">
+              <h3 className="text-sm font-bold text-slate-800">Create Subscription Plan</h3>
+              <button
+                onClick={() => setShowSubModal(false)}
+                className="p-1 hover:bg-slate-100 rounded-lg text-slate-400"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAddSubscriptionPlan} className="p-5 space-y-4 text-xs">
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700">Plan Name</label>
+                <input
+                  type="text"
+                  required
+                  value={subForm.name}
+                  onChange={(e) => setSubForm({ ...subForm, name: e.target.value })}
+                  placeholder="e.g. Diamond Elite"
+                  className="w-full border border-slate-200 bg-white text-slate-800 rounded-xl px-3 py-2"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700">Monthly Price (₹)</label>
+                <input
+                  type="number"
+                  required
+                  min="0"
+                  value={subForm.price}
+                  onChange={(e) => setSubForm({ ...subForm, price: e.target.value })}
+                  placeholder="e.g. 799"
+                  className="w-full border border-slate-200 bg-white text-slate-800 rounded-xl px-3 py-2"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">Cashback Earning (%)</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    max="100"
+                    value={subForm.cashback}
+                    onChange={(e) => setSubForm({ ...subForm, cashback: e.target.value })}
+                    className="w-full border border-slate-200 bg-white text-slate-800 rounded-xl px-3 py-2"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700">Shipping Perk</label>
+                  <select
+                    value={subForm.shipping}
+                    onChange={(e) => setSubForm({ ...subForm, shipping: e.target.value })}
+                    className="w-full border border-slate-200 bg-white text-slate-800 rounded-xl px-3 py-2"
+                  >
+                    <option value="Standard (Charged)">Standard (Charged)</option>
+                    <option value="Free over ₹500">Free over ₹500</option>
+                    <option value="Free Priority">Free Priority</option>
+                    <option value="Free Instant">Free Instant</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setShowSubModal(false)}
+                  className="flex-1 border border-slate-200 rounded-xl py-2 text-slate-655"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 bg-blue-600 hover:bg-blue-500 text-white rounded-xl py-2 font-bold"
+                >
+                  Save Plan
                 </button>
               </div>
             </form>
