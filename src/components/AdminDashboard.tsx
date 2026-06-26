@@ -663,6 +663,13 @@ export default function AdminDashboard() {
       ]
     },
     {
+      name: 'Order Management',
+      icon: ShoppingBag,
+      subsections: [
+        { name: 'Sales Orders' }
+      ]
+    },
+    {
       name: 'Subscriptions & Rewards',
       icon: Award,
       subsections: [
@@ -2969,7 +2976,7 @@ export default function AdminDashboard() {
           )}
 
           {/* SALES */}
-          {activeSection === 'Sales' && (
+          {(activeSection === 'Sales' || activeSection === 'Order Management') && (
             <div className="space-y-6 animate-[fadeIn_0.35s_ease-out]">
               {/* Tab 1: Quotations */}
               {activeSubSection === 'Quotations' && (
