@@ -81,6 +81,8 @@ interface Order {
   status: 'Pending' | 'Shipped' | 'Delivered';
   pointsRedeemed?: number;
   pointsEarned?: number;
+  storeId?: string;
+  storeName?: string;
 }
 
 interface Store {
@@ -340,6 +342,44 @@ export default function LandingPage() {
   const [walletBalance, setWalletBalance] = useState<number>(500); // 500 reward points
   const [redeemPoints, setRedeemPoints] = useState<boolean>(false);
   
+  // Subscription membership state
+  const [currentSubscription, setCurrentSubscription] = useState<string>('SUB-BRONZE');
+  const subscriptionPlans = [
+    { id: 'SUB-BRONZE', name: 'Bronze Standard', price: 0, cashback: 1, shipping: 'Standard (Charged)' },
+    { id: 'SUB-SILVER', name: 'Silver Pro', price: 299, cashback: 3, shipping: 'Free over ₹500' },
+    { id: 'SUB-GOLD', name: 'Gold Elite', price: 599, cashback: 5, shipping: 'Free Priority' },
+    { id: 'SUB-PLATINUM', name: 'Platinum VIP', price: 999, cashback: 10, shipping: 'Free Instant' }
+  ];
+
+  // Helper to compute shipping cost dynamically
+  const getShippingFee = () => {
+    const activeSub = subscriptionPlans.find(s => s.id === currentSubscription) || subscriptionPlans[0];
+    if (activeSub.id === 'SUB-BRONZE') return 15;
+    if (activeSub.id === 'SUB-SILVER') return cartTotal >= 500 ? 0 : 15;
+    if (activeSub.id === 'SUB-GOLD' || activeSub.id === 'SUB-PLATINUM') return 0;
+    return 15;
+  };
+
+  // Helper to identify if a store is the user's most frequent store
+  const isFrequentStore = (storeId: string) => {
+    if (orders.length === 0) return false;
+    const storeCounts: Record<string, number> = {};
+    orders.forEach(order => {
+      if (order.storeId) {
+        storeCounts[order.storeId] = (storeCounts[order.storeId] || 0) + 1;
+      }
+    });
+    let mostFrequentStoreId = '';
+    let maxCount = 0;
+    Object.entries(storeCounts).forEach(([sid, count]) => {
+      if (count > maxCount) {
+        maxCount = count;
+        mostFrequentStoreId = sid;
+      }
+    });
+    return storeId === mostFrequentStoreId;
+  };
+
   // Wallet transaction history
   const [walletTransactions, setWalletTransactions] = useState<Array<{
     id: string;
@@ -366,8 +406,8 @@ export default function LandingPage() {
   const [scratchReward, setScratchReward] = useState<number | null>(null);
   const [scratchRevealed, setScratchRevealed] = useState<boolean>(false);
 
-  // E-commerce Views: 'home' | 'categories' | 'shop' | 'product-detail' | 'checkout' | 'thank-you' | 'orders' | 'wishlist' | 'category-detail' | 'wallet'
-  const [view, setView] = useState<'home' | 'categories' | 'shop' | 'product-detail' | 'checkout' | 'thank-you' | 'orders' | 'wishlist' | 'category-detail' | 'wallet'>('home');
+  // E-commerce Views: 'home' | 'categories' | 'shop' | 'product-detail' | 'checkout' | 'thank-you' | 'orders' | 'wishlist' | 'category-detail' | 'wallet' | 'membership'
+  const [view, setView] = useState<'home' | 'categories' | 'shop' | 'product-detail' | 'checkout' | 'thank-you' | 'orders' | 'wishlist' | 'category-detail' | 'wallet' | 'membership'>('home');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [detailTab, setDetailTab] = useState<'desc' | 'specs' | 'reviews'>('desc');
@@ -403,6 +443,40 @@ export default function LandingPage() {
     setIncludeBundleItem1(true);
     setIncludeBundleItem2(true);
   }, [selectedProduct]);
+
+  // Set default store based on purchase frequency or location
+  useEffect(() => {
+    if (orders.length > 0) {
+      const storeCounts: Record<string, number> = {};
+      orders.forEach(order => {
+        if (order.storeId) {
+          storeCounts[order.storeId] = (storeCounts[order.storeId] || 0) + 1;
+        }
+      });
+      let mostFrequentStoreId = '';
+      let maxCount = 0;
+      Object.entries(storeCounts).forEach(([storeId, count]) => {
+        if (count > maxCount) {
+          maxCount = count;
+          mostFrequentStoreId = storeId;
+        }
+      });
+      if (mostFrequentStoreId) {
+        const freqStore = mockStores.find(s => s.id === mostFrequentStoreId);
+        if (freqStore) {
+          setSelectedStore(freqStore);
+          setSelectedArea(freqStore.area);
+          return;
+        }
+      }
+    }
+    
+    // Fallback: default to the first store in the selected area if not already set or area changed
+    const defaultStoreInArea = mockStores.find(s => s.area === selectedArea);
+    if (defaultStoreInArea && (!selectedStore || selectedStore.area !== selectedArea)) {
+      setSelectedStore(defaultStoreInArea);
+    }
+  }, [orders, selectedArea]);
 
   // Filtering states for Shop and Categories
   const [shopFilterBrand, setShopFilterBrand] = useState<string>('All');
@@ -954,9 +1028,14 @@ export default function LandingPage() {
 
   // Submit Order Action
   const handlePlaceOrder = () => {
-    const pointsToRedeem = redeemPoints ? Math.min(walletBalance, Math.floor(cartTotal + 15)) : 0;
-    const finalTotal = (cartTotal + 15) - pointsToRedeem;
-    const pointsEarned = Math.round(finalTotal * 0.05);
+    const shippingFee = getShippingFee();
+    const taxFee = 5;
+    const orderTotalBeforeRedeem = cartTotal + shippingFee + taxFee;
+    const pointsToRedeem = redeemPoints ? Math.min(walletBalance, Math.floor(orderTotalBeforeRedeem)) : 0;
+    const finalTotal = orderTotalBeforeRedeem - pointsToRedeem;
+    
+    const activeSub = subscriptionPlans.find(s => s.id === currentSubscription) || subscriptionPlans[0];
+    const pointsEarned = Math.round(finalTotal * (activeSub.cashback / 100));
 
     const newOrder: Order = {
       id: `AMR-${Math.floor(100000 + Math.random() * 900000)}`,
@@ -967,7 +1046,9 @@ export default function LandingPage() {
       paymentMethod: 'Sandbox Credit Card',
       status: 'Pending',
       pointsRedeemed: pointsToRedeem,
-      pointsEarned: pointsEarned
+      pointsEarned: pointsEarned,
+      storeId: selectedStore?.id,
+      storeName: selectedStore?.name
     };
     
     setOrders(prev => [newOrder, ...prev]);
@@ -991,7 +1072,7 @@ export default function LandingPage() {
         id: `WTX-${Math.floor(100000 + Math.random() * 900000)}`,
         type: 'credit',
         amount: pointsEarned,
-        description: `5% Cashback on Order ${newOrder.id}`,
+        description: `${activeSub.name} ${activeSub.cashback}% Cashback on Order ${newOrder.id}`,
         date: timestamp
       });
     }
@@ -1215,6 +1296,20 @@ export default function LandingPage() {
               <CardIcon className="w-3.5 h-3.5" />
               <span>Wallet: ₹{walletBalance}</span>
             </button>
+            {(() => {
+              const activeSub = subscriptionPlans.find(s => s.id === currentSubscription) || subscriptionPlans[0];
+              return (
+                <>
+                  <span className="text-slate-300">|</span>
+                  <button 
+                    onClick={() => setView('membership')}
+                    className="flex items-center gap-1 bg-amber-50 hover:bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full font-black border border-amber-200 shadow-sm cursor-pointer transition-all hover:scale-105"
+                  >
+                    <span>👑 {activeSub.name}</span>
+                  </button>
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>
@@ -1332,6 +1427,7 @@ export default function LandingPage() {
             <button onClick={() => setView('wishlist')} className={`hover:text-yellow-500 transition-colors cursor-pointer ${view === 'wishlist' ? 'text-yellow-500 font-bold' : ''}`}>Wishlist</button>
             <button onClick={() => setView('orders')} className={`hover:text-yellow-500 transition-colors cursor-pointer ${view === 'orders' ? 'text-yellow-500 font-bold' : ''}`}>Orders Page</button>
             <button onClick={() => setView('wallet')} className={`hover:text-yellow-500 transition-colors cursor-pointer ${view === 'wallet' ? 'text-yellow-500 font-bold' : ''}`}>My Wallet & Rewards</button>
+            <button onClick={() => setView('membership')} className={`hover:text-yellow-500 transition-colors cursor-pointer ${view === 'membership' ? 'text-yellow-500 font-bold' : ''}`}>👑 Membership Club</button>
           </div>
 
           <div className="flex items-center gap-4 text-xs text-slate-600">
@@ -2024,154 +2120,18 @@ export default function LandingPage() {
           </div>
         </div>
       )}
-
       {view === 'shop' && (
         <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex items-center gap-2 text-xs text-slate-400 mb-6">
-            <button onClick={handleLogoClick} className="hover:text-slate-855 cursor-pointer">Home</button>
-            <ChevronRight className="w-3 h-3" />
-            <button onClick={() => setSelectedStore(null)} className="hover:text-slate-855 cursor-pointer">Stores</button>
-            {selectedStore && (
-              <>
-                <ChevronRight className="w-3 h-3" />
-                <span className="text-slate-800 font-bold">{selectedStore.name}</span>
-              </>
-            )}
-          </div>
-
-          {!selectedStore ? (
-            /* STORE SELECTION PANEL WITH SIDEBAR AND PREMIUM CARDS */
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 animate-[fadeIn_0.35s_ease-out]">
-              
-              {/* Store Sidebar Filters */}
-              <div className="lg:col-span-3 space-y-6">
-                <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-6 shadow-sm">
-                  <div>
-                    <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider mb-3">Select Location</h3>
-                    <div className="space-y-1">
-                      {['Mumbai', 'Delhi', 'Bangalore', 'Kolkata'].map((area) => (
-                        <button
-                          key={area}
-                          onClick={() => setSelectedArea(area as any)}
-                          className={`w-full text-left text-xs py-2.5 px-3.5 rounded-xl transition-all cursor-pointer font-bold flex items-center justify-between ${selectedArea === area ? 'bg-yellow-500 text-slate-900 shadow-sm' : 'text-slate-600 hover:bg-slate-50'}`}
-                        >
-                          <span>{area}</span>
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${selectedArea === area ? 'bg-yellow-600 text-yellow-50' : 'bg-slate-100 text-slate-500'}`}>
-                            {mockStores.filter(s => s.area === area).length}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-slate-100 space-y-3">
-                    <h3 className="text-xs font-black uppercase text-slate-800 tracking-wider">Auto-Detect</h3>
-                    <button
-                      onClick={() => {
-                        setLocating(true);
-                        setTimeout(() => {
-                          const areas: ('Mumbai' | 'Delhi' | 'Bangalore' | 'Kolkata')[] = ['Mumbai', 'Delhi', 'Bangalore', 'Kolkata'];
-                          const randomArea = areas[Math.floor(Math.random() * areas.length)];
-                          setSelectedArea(randomArea);
-                          setLocating(false);
-                          alert(`Located! Your current area is set to ${randomArea}.`);
-                        }, 1000);
-                      }}
-                      disabled={locating}
-                      className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs py-2.5 rounded-xl transition-all shadow flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
-                    >
-                      <MapPin className="w-3.5 h-3.5" />
-                      {locating ? 'Locating...' : 'Use Current Location'}
-                    </button>
-                  </div>
-
-                  <div className="pt-4 border-t border-slate-100 space-y-2.5 text-xs text-slate-400 font-semibold">
-                    <p className="flex justify-between items-center">
-                      <span>Active Region:</span> 
-                      <span className="text-slate-800 font-bold bg-slate-100 px-2 py-0.5 rounded">{selectedArea}</span>
-                    </p>
-                    <p className="flex justify-between items-center">
-                      <span>Wallet Perks:</span> 
-                      <span className="text-emerald-600 font-black bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">5% Cashback</span>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stores Grid Column */}
-              <div className="lg:col-span-9 space-y-6">
-                <div className="bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-6 text-white shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="space-y-1">
-                    <h2 className="text-lg font-black tracking-tight">Available Shops in {selectedArea}</h2>
-                    <p className="text-xs text-slate-350 font-medium">Discover handpicked, verified shops nearby with rewards perks active.</p>
-                  </div>
-                  <span className="bg-yellow-500 text-slate-950 font-black text-xs px-3.5 py-1.5 rounded-full shadow-sm self-start sm:self-auto">
-                    {mockStores.filter(store => store.area === selectedArea).length} Stores Found
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {mockStores
-                    .filter((store) => store.area === selectedArea)
-                    .map((store) => (
-                      <div key={store.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-yellow-500 hover:shadow-xl transition-all duration-300 flex flex-col justify-between group">
-                        <div className="relative h-44 bg-slate-100 overflow-hidden">
-                          <img src={store.img} alt={store.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-transparent" />
-                          
-                          <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md border border-white/10 text-white text-[9px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <span>REWARDS ACTIVE</span>
-                          </div>
-
-                          <div className="absolute top-3 right-3 bg-yellow-500 text-slate-950 text-xs font-black px-2.5 py-0.5 rounded-xl flex items-center gap-1 shadow-md">
-                            ★ {store.rating}
-                          </div>
-
-                          <div className="absolute bottom-3 left-4 text-white space-y-1">
-                            <span className="text-[8px] font-extrabold uppercase bg-yellow-500 text-slate-950 px-2 py-0.5 rounded">{store.area}</span>
-                            <h3 className="font-black text-base drop-shadow-sm tracking-tight">{store.name}</h3>
-                          </div>
-                        </div>
-                        
-                        <div className="p-5 flex-grow flex flex-col justify-between space-y-4 text-xs">
-                          <div className="space-y-2">
-                            <p className="text-slate-500 font-medium leading-relaxed">{store.address}</p>
-                            <div className="flex justify-between items-center text-[10px] text-slate-450 border-t border-slate-50 pt-2.5 font-semibold">
-                              <span>Tel: {store.phone}</span>
-                              <span className="text-slate-800 font-bold">{store.products.length} Products Available</span>
-                            </div>
-                          </div>
-                          
-                          <button
-                            onClick={() => setSelectedStore(store)}
-                            className="w-full bg-slate-900 group-hover:bg-yellow-500 group-hover:text-slate-900 text-white font-bold text-xs py-3 rounded-xl transition-all text-center cursor-pointer shadow-sm flex items-center justify-center gap-1"
-                          >
-                            <span>Explore Store</span>
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </div>
-            </div>
-          ) : (
-            /* STORE CATALOG VIEW WITH STORE DETAIL HEADER BANNER */
+          {selectedStore ? (
+            /* STORE CATALOG VIEW WITH STORE DETAIL HEADER BANNER & SIDEBAR SWITCHER */
             <div className="space-y-8 animate-[fadeIn_0.35s_ease-out]">
               <div className="relative rounded-2xl overflow-hidden shadow-lg border border-slate-200">
                 <div className="absolute inset-0 bg-slate-900/45 z-10" />
                 <img src={selectedStore.banner} alt={selectedStore.name} className="w-full h-48 object-cover" />
-                <button
-                  onClick={() => setSelectedStore(null)}
-                  className="absolute top-4 left-4 z-20 bg-white/90 hover:bg-white text-slate-800 text-xs font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5 transition-all shadow cursor-pointer"
-                >
-                  ← Back to Stores
-                </button>
                 
                 <div className="absolute bottom-5 left-6 z-20 text-white space-y-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-black uppercase bg-yellow-500 text-slate-950 px-2 py-0.5 rounded-lg">
+                    <span className="text-[9px] font-black uppercase bg-yellow-500 text-slate-955 px-2 py-0.5 rounded-lg">
                       ★ {selectedStore.rating}
                     </span>
                     <span className="text-[10px] font-bold text-slate-200 bg-black/40 px-2 py-0.5 rounded-lg border border-white/10">
@@ -2188,6 +2148,66 @@ export default function LandingPage() {
                 {/* Sidebar Filters */}
                 <div className="lg:col-span-3 space-y-6">
                   <div className="bg-white border border-slate-200 rounded-xl p-5 space-y-6">
+                    {/* Location & Store Switcher */}
+                    <div className="space-y-4">
+                      <div>
+                        <h3 className="text-xs font-black uppercase text-slate-855 tracking-wider mb-2.5">Shop Location</h3>
+                        <div className="grid grid-cols-2 gap-1.5">
+                          {['Mumbai', 'Delhi', 'Bangalore', 'Kolkata'].map((area) => (
+                            <button
+                              key={area}
+                              type="button"
+                              onClick={() => setSelectedArea(area as any)}
+                              className={`py-1.5 text-[10px] font-bold rounded-lg border text-center transition-all cursor-pointer ${
+                                selectedArea === area
+                                  ? 'bg-yellow-500 border-yellow-500 text-slate-900 shadow-sm'
+                                  : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                              }`}
+                            >
+                              {area}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-2">Select Store</h3>
+                        <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1 scrollbar-thin">
+                          {mockStores
+                            .filter(s => s.area === selectedArea)
+                            .map((store) => {
+                              const isCurrentStore = selectedStore?.id === store.id;
+                              const isFreq = isFrequentStore(store.id);
+                              
+                              return (
+                                <button
+                                  key={store.id}
+                                  type="button"
+                                  onClick={() => setSelectedStore(store)}
+                                  className={`w-full text-left text-[11px] p-2 rounded-xl border transition-all cursor-pointer flex flex-col gap-0.5 ${
+                                    isCurrentStore
+                                      ? 'bg-slate-900 border-slate-900 text-white font-extrabold shadow-sm'
+                                      : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
+                                  }`}
+                                >
+                                  <div className="flex justify-between items-center w-full">
+                                    <span className="truncate pr-1 font-bold">{store.name}</span>
+                                    {isFreq && (
+                                      <span className="text-[8px] bg-yellow-500 text-slate-950 font-black px-1 py-0.5 rounded leading-none flex-shrink-0 uppercase">Default</span>
+                                    )}
+                                  </div>
+                                  <span className={`text-[9px] leading-none ${isCurrentStore ? 'text-slate-400' : 'text-slate-500'}`}>
+                                    ★ {store.rating} • {store.products.length} Products
+                                  </span>
+                                </button>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    </div>
+
+                    <hr className="border-slate-100" />
+
                     <div>
                       <h3 className="text-xs font-black uppercase text-slate-855 tracking-wider mb-3">Brands</h3>
                       <div className="space-y-2">
@@ -2267,13 +2287,23 @@ export default function LandingPage() {
                   </div>
 
                   {/* Grid List with Image on Top */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    {filteredProducts.map((p) => (
-                      <ProductCard key={p.id} product={p} />
-                    ))}
-                  </div>
+                  {filteredProducts.length === 0 ? (
+                    <div className="bg-white border border-slate-200 rounded-xl p-12 text-center text-xs text-slate-400">
+                      No products found matching filters at this store.
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                      {filteredProducts.map((p) => (
+                        <ProductCard key={p.id} product={p} />
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
+            </div>
+          ) : (
+            <div className="bg-white border border-slate-200 rounded-xl p-12 text-center text-xs text-slate-400">
+              No store selected. Please select a store in the sidebar.
             </div>
           )}
         </div>
@@ -3127,6 +3157,157 @@ export default function LandingPage() {
         </div>
       )}
 
+      {/* VIEW: SUBSCRIPTION MEMBERSHIP CLUB */}
+      {view === 'membership' && (
+        <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 animate-fadeIn">
+          {/* Page Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h2 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                <Award className="w-7 h-7 text-yellow-500" />
+                VIP Membership Club
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">Unlock premium cashback rates, free priority shipping options, and custom member perks.</p>
+            </div>
+            <button 
+              onClick={() => setView('shop')}
+              className="flex items-center gap-1.5 px-4 py-2 bg-white hover:bg-slate-50 border border-slate-200 text-xs font-bold rounded-lg transition-all text-slate-700 shadow-sm cursor-pointer"
+            >
+              <ChevronLeft className="w-4 h-4" /> Back to Shop
+            </button>
+          </div>
+
+          {/* Current Membership Banner */}
+          {(() => {
+            const activeSub = subscriptionPlans.find(s => s.id === currentSubscription) || subscriptionPlans[0];
+            return (
+              <div className="bg-gradient-to-r from-yellow-500 to-amber-600 text-slate-950 p-6 rounded-2xl shadow-md flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div className="space-y-1 relative z-10">
+                  <span className="text-[10px] uppercase font-black tracking-wider text-slate-900/80 bg-white/20 px-2.5 py-0.5 rounded-full">Active Tier</span>
+                  <h3 className="text-xl font-black tracking-tight mt-1.5">You are currently subscribed to {activeSub.name}</h3>
+                  <p className="text-xs text-slate-900/90 font-medium">Enjoying {activeSub.cashback}% cashback earnings and {activeSub.shipping} perks.</p>
+                </div>
+                <button 
+                  onClick={() => setView('wallet')}
+                  className="bg-slate-950 hover:bg-slate-900 text-white text-xs font-black px-5 py-3 rounded-xl shadow-md transition-all cursor-pointer relative z-10"
+                >
+                  Manage Wallet Balance
+                </button>
+              </div>
+            );
+          })()}
+
+          {/* Subscription Plans Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {subscriptionPlans.map((plan) => {
+              const isCurrent = currentSubscription === plan.id;
+              
+              return (
+                <div 
+                  key={plan.id} 
+                  className={`bg-white border rounded-2xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden transition-all duration-300 ${
+                    isCurrent 
+                      ? 'border-yellow-500 ring-2 ring-yellow-500/20 -translate-y-1' 
+                      : 'border-slate-200 hover:border-slate-350 hover:-translate-y-1'
+                  }`}
+                >
+                  {isCurrent && (
+                    <div className="absolute top-0 right-0 bg-yellow-500 text-slate-955 font-black text-[9px] px-3 py-1 rounded-bl-xl uppercase tracking-wider">
+                      Current
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <h4 className="text-base font-black text-slate-900 tracking-tight">{plan.name}</h4>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-2xl font-black text-slate-900">₹{plan.price}</span>
+                        <span className="text-xs text-slate-400 font-bold">/ month</span>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-slate-100 pt-4 space-y-3">
+                      <div className="flex items-start gap-2.5 text-xs text-slate-655">
+                        <Check className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <strong className="text-slate-900 font-bold">{plan.cashback}% Cashback</strong>
+                          <p className="text-[10px] text-slate-450 mt-0.5">Accrued as rewards wallet balance on order completion.</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2.5 text-xs text-slate-655">
+                        <Check className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <strong className="text-slate-900 font-bold">{plan.shipping}</strong>
+                          <p className="text-[10px] text-slate-455 mt-0.5">Shipping rules automatically applied during checkout.</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-start gap-2.5 text-xs text-slate-655">
+                        <Check className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <strong className="text-slate-900 font-bold">Priority Support</strong>
+                          <p className="text-[10px] text-slate-455 mt-0.5">Instant live chat routing to warehouse admins.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-6">
+                    {isCurrent ? (
+                      <button
+                        type="button"
+                        disabled
+                        className="w-full py-2.5 bg-slate-100 text-slate-400 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-not-allowed"
+                      >
+                        <CheckCircle className="w-4 h-4 text-slate-400" /> Active Tier
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (plan.price > 0 && walletBalance < plan.price) {
+                            alert(`Insufficient wallet balance. You need ₹${plan.price} to subscribe but only have ₹${walletBalance}. Please go to "My Wallet & Rewards" to add funds.`);
+                            return;
+                          }
+                          
+                          // Deduct balance and change subscription
+                          if (plan.price > 0) {
+                            setWalletBalance(prev => prev - plan.price);
+                            const timestamp = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            setWalletTransactions(prev => [
+                              {
+                                id: `WTX-${Math.floor(100000 + Math.random() * 900000)}`,
+                                type: 'debit',
+                                amount: plan.price,
+                                description: `Purchased ${plan.name} Membership`,
+                                date: timestamp
+                              },
+                              ...prev
+                            ]);
+                          }
+                          
+                          setCurrentSubscription(plan.id);
+                          alert(`Success! You have subscribed to the ${plan.name} tier.`);
+                        }}
+                        className={`w-full py-2.5 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                          plan.price === 0 
+                            ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' 
+                            : 'bg-yellow-500 hover:bg-yellow-600 text-slate-950 shadow-sm'
+                        }`}
+                      >
+                        {plan.price === 0 ? 'Activate Plan' : `Subscribe (₹${plan.price}/mo)`}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* VIEW: 3-STEP CHECKOUT PAGE */}
       {view === 'checkout' && (
         <div className="max-w-4xl mx-auto px-4 py-8">
@@ -3303,57 +3484,64 @@ export default function LandingPage() {
                   <p><span className="font-bold text-slate-455">Payment method:</span> Sandbox Credit Card (Ending in {paymentCardNumber.slice(-4) || '4444'})</p>
                 </div>
 
-                {walletBalance > 0 && (
-                  <div className="bg-yellow-50 border border-yellow-150 p-4 rounded-xl flex items-center justify-between text-xs my-4">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        id="redeemPoints"
-                        checked={redeemPoints}
-                        onChange={(e) => setRedeemPoints(e.target.checked)}
-                        className="accent-yellow-500 w-4 h-4 cursor-pointer"
-                      />
-                      <label htmlFor="redeemPoints" className="font-bold text-slate-700 cursor-pointer">
-                        Redeem Wallet Rewards (Balance: ₹{walletBalance})
-                      </label>
-                    </div>
-                    <span className="font-mono font-bold text-yellow-800">
-                      Save ₹{Math.min(walletBalance, Math.floor(cartTotal + 15))}
-                    </span>
-                  </div>
-                )}
+                {(() => {
+                  const shippingFee = getShippingFee();
+                  const taxFee = 5;
+                  const orderTotalBeforeRedeem = cartTotal + shippingFee + taxFee;
+                  const maxRedeem = Math.min(walletBalance, Math.floor(orderTotalBeforeRedeem));
+                  const finalTotal = orderTotalBeforeRedeem - (redeemPoints ? maxRedeem : 0);
+                  
+                  return (
+                    <>
+                      {walletBalance > 0 && (
+                        <div className="bg-yellow-50 border border-yellow-150 p-4 rounded-xl flex items-center justify-between text-xs my-4">
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id="redeemPoints"
+                              checked={redeemPoints}
+                              onChange={(e) => setRedeemPoints(e.target.checked)}
+                              className="accent-yellow-500 w-4 h-4 cursor-pointer"
+                            />
+                            <label htmlFor="redeemPoints" className="font-bold text-slate-700 cursor-pointer">
+                              Redeem Wallet Rewards (Balance: ₹{walletBalance})
+                            </label>
+                          </div>
+                          <span className="font-mono font-bold text-yellow-800">
+                            Save ₹{maxRedeem}
+                          </span>
+                        </div>
+                      )}
 
-                <div className="divide-y divide-slate-100">
-                  {cart.map(item => (
-                    <div key={item.product.id} className="flex justify-between items-center py-2 text-xs">
-                      <span>{item.product.title} (x{item.quantity})</span>
-                      <span className="font-bold text-slate-900">${(item.product.price * item.quantity).toFixed(2)}</span>
-                    </div>
-                  ))}
-                  <div className="flex justify-between py-2 text-xs pt-3 font-semibold text-slate-500">
-                    <span>Shipping Fee</span>
-                    <span>$10.00</span>
-                  </div>
-                  <div className="flex justify-between py-2 text-xs font-semibold text-slate-500">
-                    <span>GST Tax</span>
-                    <span>$5.00</span>
-                  </div>
-                  {redeemPoints && (
-                    <div className="flex justify-between py-2 text-xs font-semibold text-red-500">
-                      <span>Wallet Rewards Redeemed</span>
-                      <span>-₹{Math.min(walletBalance, Math.floor(cartTotal + 15)).toFixed(2)}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between py-2 text-sm font-black text-slate-900 pt-3 border-t border-slate-150">
-                    <span>Total Sum</span>
-                    <span>
-                      ${(
-                        (cartTotal + 15) - 
-                        (redeemPoints ? Math.min(walletBalance, Math.floor(cartTotal + 15)) : 0)
-                      ).toFixed(2)}
-                    </span>
-                  </div>
-                </div>
+                      <div className="divide-y divide-slate-100">
+                        {cart.map(item => (
+                          <div key={item.product.id} className="flex justify-between items-center py-2 text-xs">
+                            <span>{item.product.title} (x{item.quantity})</span>
+                            <span className="font-bold text-slate-900">₹{(item.product.price * item.quantity).toFixed(2)}</span>
+                          </div>
+                        ))}
+                        <div className="flex justify-between py-2 text-xs pt-3 font-semibold text-slate-500">
+                          <span>Shipping Fee</span>
+                          <span>{shippingFee === 0 ? 'Free' : `₹${shippingFee.toFixed(2)}`}</span>
+                        </div>
+                        <div className="flex justify-between py-2 text-xs font-semibold text-slate-500">
+                          <span>GST Tax</span>
+                          <span>₹{taxFee.toFixed(2)}</span>
+                        </div>
+                        {redeemPoints && (
+                          <div className="flex justify-between py-2 text-xs font-semibold text-red-500">
+                            <span>Wallet Rewards Redeemed</span>
+                            <span>-₹{maxRedeem.toFixed(2)}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between py-2 text-sm font-black text-slate-900 pt-3 border-t border-slate-150">
+                          <span>Total Sum</span>
+                          <span>₹{finalTotal.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
 
                 <div className="flex gap-4">
                   <button 

@@ -49,13 +49,13 @@ export default function Layout({ children }: LayoutProps) {
   // Define sidebar menu options
   const menuItems = [
     { label: 'Dashboard', icon: LayoutDashboard, roles: ['admin', 'stockist', 'vendor'] },
-    { label: 'Analytics', icon: LineChart, roles: ['admin'] },
-    { label: 'Products', icon: ShoppingBag, roles: ['admin', 'stockist'] },
-    { label: 'Inventory', icon: Package, roles: ['admin', 'stockist'] },
-    { label: 'Warehouse', icon: Warehouse, roles: ['admin', 'stockist'] },
-    { label: 'CRM', icon: Users, roles: ['admin'] },
-    { label: 'Reports', icon: FileSpreadsheet, roles: ['admin'] },
-    { label: 'Notifications', icon: MessageSquare, roles: ['admin'] },
+    { label: 'Analytics', icon: LineChart, roles: ['admin', 'stockist', 'vendor'] },
+    { label: 'Products', icon: ShoppingBag, roles: ['admin', 'stockist', 'vendor'] },
+    { label: 'Inventory', icon: Package, roles: ['admin', 'stockist', 'vendor'] },
+    { label: 'Warehouse', icon: Warehouse, roles: ['admin', 'stockist', 'vendor'] },
+    { label: 'CRM', icon: Users, roles: ['admin', 'stockist', 'vendor'] },
+    { label: 'Reports', icon: FileSpreadsheet, roles: ['admin', 'stockist', 'vendor'] },
+    { label: 'Notifications', icon: MessageSquare, roles: ['admin', 'stockist', 'vendor'] },
     { label: 'Settings', icon: SettingsIcon, roles: ['admin', 'stockist', 'vendor'] },
   ];
 

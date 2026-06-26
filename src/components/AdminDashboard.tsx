@@ -609,6 +609,12 @@ export default function AdminDashboard() {
     { id: 'CUST-104', name: 'Jupiter Agri Foods (Manpreet Singh)', balance: 0, segment: 'Retail Partner' },
     { id: 'CUST-105', name: 'Lotus Laboratories (Rashmi Sen)', balance: 50, segment: 'Churn Risk' }
   ]);
+  const [customerSubscriptions, setCustomerSubscriptions] = useState([
+    { id: 'SUB-101', name: 'Global Distribs (Anil Mehta)', tier: 'Gold Elite', status: 'Active', renewalDate: '2026-07-24', price: 599 },
+    { id: 'SUB-102', name: 'Nexus Pharma (Dr. Sarah Joseph)', tier: 'Platinum VIP', status: 'Active', renewalDate: '2026-07-19', price: 999 },
+    { id: 'SUB-103', name: 'Alpha Traders (Suresh Kumar)', tier: 'Silver Pro', status: 'Active', renewalDate: '2026-07-02', price: 299 },
+    { id: 'SUB-104', name: 'Lotus Laboratories (Rashmi Sen)', tier: 'Bronze Standard', status: 'Active', renewalDate: '2026-07-11', price: 0 }
+  ]);
   const [selectedWalletUser, setSelectedWalletUser] = useState('CUST-101');
   const [walletAdjustType, setWalletAdjustType] = useState<'credit' | 'debit'>('credit');
   const [walletAdjustAmount, setWalletAdjustAmount] = useState('');
@@ -656,6 +662,7 @@ export default function AdminDashboard() {
       subsections: [
         { name: 'User Wallets' },
         { name: 'Subscription Plans' },
+        { name: 'User Subscriptions' },
         { name: 'Coupons & Promos' },
         { name: 'Reward Policies' }
       ]
@@ -4899,6 +4906,109 @@ export default function AdminDashboard() {
                         </button>
                       </div>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* User Subscriptions */}
+              {activeSubSection === 'User Subscriptions' && (
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800">Customer Memberships Audit Ledger</h3>
+                      <p className="text-xs text-slate-500 mt-0.5">Audit customer VIP tiers, billing status, renewal schedules, and apply admin overrides.</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm space-y-4">
+                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Subscriber Directory</h4>
+                    <div className="overflow-x-auto border border-slate-100 rounded-xl">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead>
+                          <tr className="bg-slate-50 text-slate-600 border-b border-slate-150 font-bold">
+                            <th className="p-3">Ref ID</th>
+                            <th className="p-3">Customer Account</th>
+                            <th className="p-3">Active Tier</th>
+                            <th className="p-3">Renewal Date</th>
+                            <th className="p-3">Cost Rate</th>
+                            <th className="p-3 text-center">Status</th>
+                            <th className="p-3 text-center">Actions / Admin Overrides</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
+                          {customerSubscriptions.map((sub) => (
+                            <tr key={sub.id} className="hover:bg-slate-50 transition-colors">
+                              <td className="p-3 font-mono text-[10px] text-slate-400 font-bold">{sub.id}</td>
+                              <td className="p-3 text-slate-900 font-bold">{sub.name}</td>
+                              <td className="p-3">
+                                <span className={`px-2.5 py-0.5 text-[9px] rounded font-extrabold ${
+                                  sub.tier === 'Platinum VIP' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' :
+                                  sub.tier === 'Gold Elite' ? 'bg-amber-50 text-amber-600 border border-amber-250' :
+                                  sub.tier === 'Silver Pro' ? 'bg-blue-50 text-blue-650 border border-blue-200' :
+                                  'bg-slate-50 text-slate-600 border border-slate-200'
+                                }`}>
+                                  {sub.tier}
+                                </span>
+                              </td>
+                              <td className="p-3 text-slate-500 font-mono text-[10px]">{sub.renewalDate}</td>
+                              <td className="p-3 font-bold text-slate-900">₹{sub.price}/mo</td>
+                              <td className="p-3 text-center">
+                                <span className={`px-2 py-0.5 text-[9px] rounded font-bold ${
+                                  sub.status === 'Active' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
+                                }`}>
+                                  {sub.status}
+                                </span>
+                              </td>
+                              <td className="p-3 text-center flex justify-center items-center gap-2">
+                                <select
+                                  value={sub.tier}
+                                  onChange={(e) => {
+                                    const nextTier = e.target.value;
+                                    const matchedPlan = subscriptionPlans.find(p => p.name === nextTier);
+                                    const nextPrice = matchedPlan ? matchedPlan.price : 0;
+                                    
+                                    setCustomerSubscriptions(prev => prev.map(item => {
+                                      if (item.id === sub.id) {
+                                        return { ...item, tier: nextTier, price: nextPrice };
+                                      }
+                                      return item;
+                                    }));
+                                    addActivity(`Admin modified subscription tier for ${sub.name} to ${nextTier}`, 'payment');
+                                    alert(`Successfully updated subscription tier for ${sub.name} to ${nextTier}`);
+                                  }}
+                                  className="border border-slate-200 bg-white text-slate-800 rounded px-2 py-1 text-[10px] focus:outline-none"
+                                >
+                                  {subscriptionPlans.map(p => (
+                                    <option key={p.id} value={p.name}>{p.name}</option>
+                                  ))}
+                                </select>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setCustomerSubscriptions(prev => prev.map(item => {
+                                      if (item.id === sub.id) {
+                                        const nextStatus = item.status === 'Active' ? 'Cancelled' : 'Active';
+                                        return { ...item, status: nextStatus };
+                                      }
+                                      return item;
+                                    }));
+                                    const nextAct = sub.status === 'Active' ? 'cancelled' : 're-activated';
+                                    addActivity(`Admin ${nextAct} subscription for ${sub.name}`, 'payment');
+                                  }}
+                                  className={`px-2 py-1 text-[10px] font-bold rounded ${
+                                    sub.status === 'Active'
+                                      ? 'bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200'
+                                      : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-600 border border-emerald-200'
+                                  }`}
+                                >
+                                  {sub.status === 'Active' ? 'Cancel' : 'Activate'}
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               )}
