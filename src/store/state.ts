@@ -31,6 +31,7 @@ export interface InventoryItem {
   batch: string;
   expiry: string;
   discount?: number; // discount percentage
+  image?: string; // product image URL
 }
 
 export interface Warehouse {
@@ -91,6 +92,7 @@ interface AppState {
   inventory: InventoryItem[];
   updateInventoryStock: (id: string, newStock: number) => void;
   addInventoryItem: (item: Omit<InventoryItem, 'id'>) => void;
+  updateInventoryItem: (id: string, item: Partial<InventoryItem>) => void;
   updateProductDiscount: (id: string, discount: number) => void;
   
   warehouses: Warehouse[];
@@ -123,11 +125,11 @@ const initialLeads: CRMLead[] = [
 ];
 
 const initialInventory: InventoryItem[] = [
-  { id: 'PROD-001', name: 'Premium Grade Silica', sku: 'SIL-PREM-50', category: 'Chemicals', gst: 18, stock: 1200, reserved: 350, price: 450, batch: 'B-SIL23', expiry: '2028-12-31', discount: 10 },
-  { id: 'PROD-002', name: 'High-Density Polymer Beads', sku: 'POLY-HD-100', category: 'Plastics', gst: 18, stock: 850, reserved: 120, price: 620, batch: 'B-POL99', expiry: '2029-06-15', discount: 5 },
-  { id: 'PROD-003', name: 'Pure Stearic Acid Powder', sku: 'STE-ACID-25', category: 'Chemicals', gst: 12, stock: 2450, reserved: 800, price: 180, batch: 'B-STE45', expiry: '2027-10-20', discount: 12 },
-  { id: 'PROD-004', name: 'Industrial Ethanol 99%', sku: 'ETH-IND-200', category: 'Solvents', gst: 18, stock: 4500, reserved: 1500, price: 340, batch: 'B-ETH11', expiry: '2030-01-01', discount: 8 },
-  { id: 'PROD-005', name: 'Almond Carrier Oil Extra', sku: 'OIL-ALM-10', category: 'Organics', gst: 5, stock: 320, reserved: 50, price: 1250, batch: 'B-OIL55', expiry: '2027-04-12', discount: 15 },
+  { id: 'PROD-001', name: 'Premium Grade Silica', sku: 'SIL-PREM-50', category: 'Chemicals', gst: 18, stock: 1200, reserved: 350, price: 450, batch: 'B-SIL23', expiry: '2028-12-31', discount: 10, image: 'https://images.unsplash.com/photo-1607990283143-e81e7a2c93ab?w=400&auto=format&fit=crop&q=60' },
+  { id: 'PROD-002', name: 'High-Density Polymer Beads', sku: 'POLY-HD-100', category: 'Plastics', gst: 18, stock: 850, reserved: 120, price: 620, batch: 'B-POL99', expiry: '2029-06-15', discount: 5, image: 'https://images.unsplash.com/photo-1576086213369-97a306d36557?w=400&auto=format&fit=crop&q=60' },
+  { id: 'PROD-003', name: 'Pure Stearic Acid Powder', sku: 'STE-ACID-25', category: 'Chemicals', gst: 12, stock: 2450, reserved: 800, price: 180, batch: 'B-STE45', expiry: '2027-10-20', discount: 12, image: 'https://images.unsplash.com/photo-1628164673634-03fa40858b9d?w=400&auto=format&fit=crop&q=60' },
+  { id: 'PROD-004', name: 'Industrial Ethanol 99%', sku: 'ETH-IND-200', category: 'Solvents', gst: 18, stock: 4500, reserved: 1500, price: 340, batch: 'B-ETH11', expiry: '2030-01-01', discount: 8, image: 'https://images.unsplash.com/photo-1603123853880-a92fafb7809f?w=400&auto=format&fit=crop&q=60' },
+  { id: 'PROD-005', name: 'Almond Carrier Oil Extra', sku: 'OIL-ALM-10', category: 'Organics', gst: 5, stock: 320, reserved: 50, price: 1250, batch: 'B-OIL55', expiry: '2027-04-12', discount: 15, image: 'https://images.unsplash.com/photo-1611080626919-7cf5a9dbab5b?w=400&auto=format&fit=crop&q=60' },
 ];
 
 const initialWarehouses: Warehouse[] = [
@@ -237,6 +239,9 @@ export const useAppState = create<AppState>((set) => ({
   })),
   addInventoryItem: (item) => set((state) => ({
     inventory: [{ ...item, id: `PROD-${Math.floor(100 + Math.random() * 900)}` }, ...state.inventory]
+  })),
+  updateInventoryItem: (id, updatedFields) => set((state) => ({
+    inventory: state.inventory.map((item) => item.id === id ? { ...item, ...updatedFields } : item)
   })),
   updateProductDiscount: (id, discount) => set((state) => ({
     inventory: state.inventory.map((item) => item.id === id ? { ...item, discount } : item)
