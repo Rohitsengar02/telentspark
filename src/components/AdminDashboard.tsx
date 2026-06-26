@@ -628,6 +628,7 @@ export default function AdminDashboard() {
   ]);
   const [showSubModal, setShowSubModal] = useState(false);
   const [subForm, setSubForm] = useState({ name: '', price: '', cashback: '5', shipping: 'Free Priority' });
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
 
   const [coupons, setCoupons] = useState([
     { code: 'WELCOME100', reward: 100, status: 'Active', redemptions: 142, expiry: '2026-12-31' },
@@ -886,21 +887,39 @@ export default function AdminDashboard() {
       alert("Please enter plan name and price");
       return;
     }
-    setSubscriptionPlans(prev => [
-      ...prev,
-      {
-        id: `SUB-${Math.floor(1000 + Math.random() * 9000)}`,
-        name: subForm.name,
-        price: parseFloat(subForm.price) || 0,
-        cashback: parseFloat(subForm.cashback) || 0,
-        shipping: subForm.shipping,
-        subscribers: 0
-      }
-    ]);
-    addActivity(`New Subscription Plan Created: ${subForm.name} (₹${subForm.price}/mo)`, 'payment');
+    if (editingPlanId) {
+      setSubscriptionPlans(prev => prev.map(plan => {
+        if (plan.id === editingPlanId) {
+          return {
+            ...plan,
+            name: subForm.name,
+            price: parseFloat(subForm.price) || 0,
+            cashback: parseFloat(subForm.cashback) || 0,
+            shipping: subForm.shipping
+          };
+        }
+        return plan;
+      }));
+      addActivity(`Subscription Plan Updated: ${subForm.name} (₹${subForm.price}/mo)`, 'payment');
+      alert("Subscription plan updated successfully!");
+    } else {
+      setSubscriptionPlans(prev => [
+        ...prev,
+        {
+          id: `SUB-${Math.floor(1000 + Math.random() * 9000)}`,
+          name: subForm.name,
+          price: parseFloat(subForm.price) || 0,
+          cashback: parseFloat(subForm.cashback) || 0,
+          shipping: subForm.shipping,
+          subscribers: 0
+        }
+      ]);
+      addActivity(`New Subscription Plan Created: ${subForm.name} (₹${subForm.price}/mo)`, 'payment');
+      alert("Subscription plan created successfully!");
+    }
     setShowSubModal(false);
+    setEditingPlanId(null);
     setSubForm({ name: '', price: '', cashback: '5', shipping: 'Free Priority' });
-    alert("Subscription plan created successfully!");
   };
 
   const handleCreateCoupon = (e: React.FormEvent) => {
@@ -4864,7 +4883,11 @@ export default function AdminDashboard() {
                       <p className="text-xs text-slate-500 mt-0.5">Control pricing tiers, custom loyalty cashback rates, and special shipping options.</p>
                     </div>
                     <button
-                      onClick={() => setShowSubModal(true)}
+                      onClick={() => {
+                        setEditingPlanId(null);
+                        setSubForm({ name: '', price: '', cashback: '5', shipping: 'Free Priority' });
+                        setShowSubModal(true);
+                      }}
                       className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-3.5 py-2 text-xs font-bold shadow-md"
                     >
                       + Create Subscription Tier
@@ -4877,9 +4900,28 @@ export default function AdminDashboard() {
                         <div>
                           <div className="flex justify-between items-start">
                             <span className="text-[9px] font-mono text-slate-400 font-bold">{plan.id}</span>
-                            <span className="text-[10px] bg-blue-50 text-blue-600 font-bold px-2 py-0.5 rounded-lg">
-                              {plan.subscribers} Subs
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingPlanId(plan.id);
+                                  setSubForm({
+                                    name: plan.name,
+                                    price: plan.price.toString(),
+                                    cashback: plan.cashback.toString(),
+                                    shipping: plan.shipping
+                                  });
+                                  setShowSubModal(true);
+                                }}
+                                className="p-1 hover:bg-slate-100 rounded-lg text-slate-500 hover:text-blue-600 transition-colors"
+                                title="Edit subscription plan"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </button>
+                              <span className="text-[10px] bg-blue-50 text-blue-600 font-bold px-2 py-0.5 rounded-lg">
+                                {plan.subscribers} Subs
+                              </span>
+                            </div>
                           </div>
                           <h4 className="text-sm font-extrabold text-slate-900 mt-2">{plan.name}</h4>
                           <div className="mt-3.5 border-t border-slate-50 pt-3 space-y-2 text-xs text-slate-600">
@@ -5458,7 +5500,7 @@ export default function AdminDashboard() {
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
           <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="flex items-center justify-between p-5 border-b border-slate-200">
-              <h3 className="text-sm font-bold text-slate-800">Create Subscription Plan</h3>
+              <h3 className="text-sm font-bold text-slate-800">{editingPlanId ? 'Edit Subscription Plan' : 'Create Subscription Plan'}</h3>
               <button
                 onClick={() => setShowSubModal(false)}
                 className="p-1 hover:bg-slate-100 rounded-lg text-slate-400"
@@ -5533,7 +5575,7 @@ export default function AdminDashboard() {
                   type="submit"
                   className="flex-1 bg-blue-600 hover:bg-blue-500 text-white rounded-xl py-2 font-bold"
                 >
-                  Save Plan
+                  {editingPlanId ? 'Save Changes' : 'Create Plan'}
                 </button>
               </div>
             </form>
