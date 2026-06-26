@@ -630,6 +630,11 @@ export default function AdminDashboard() {
   const [subForm, setSubForm] = useState({ name: '', price: '', cashback: '5', shipping: 'Free Priority' });
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
 
+  // Sales Orders states
+  const [selectedOrderVendorFilter, setSelectedOrderVendorFilter] = useState('All');
+  const [selectedOrderDetails, setSelectedOrderDetails] = useState<Order | null>(null);
+  const [showOrderDetailModal, setShowOrderDetailModal] = useState(false);
+
   const [coupons, setCoupons] = useState([
     { code: 'WELCOME100', reward: 100, status: 'Active', redemptions: 142, expiry: '2026-12-31' },
     { code: 'FESTIVE250', reward: 250, status: 'Active', redemptions: 64, expiry: '2026-09-30' },
@@ -3107,50 +3112,74 @@ export default function AdminDashboard() {
               {/* Tab 3: Sales Orders */}
               {activeSubSection === 'Sales Orders' && (
                 <div className="space-y-6">
-                  <div className="bg-white border border-slate-200 p-5 rounded-2xl flex justify-between items-center shadow-sm">
+                  {/* Top Bar with Filter Dropdown */}
+                  <div className="bg-white border border-slate-200 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
                     <div>
                       <h3 className="text-sm font-bold text-slate-800">Sales Orders Ledger</h3>
-                      <p className="text-xs text-slate-500 mt-1">Track warehouse shipping distributions, courier routing, and dispatch schedules.</p>
+                      <p className="text-xs text-slate-500 mt-1">Track customer distribution orders, supplier links, and fulfillment status.</p>
                     </div>
-                    <span className="text-[10px] bg-slate-100 text-slate-600 px-3 py-1 rounded-full font-bold">4 Active Orders</span>
+                    
+                    {/* Orders Dropdown Filter */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-500 font-bold">Vendor Filter:</span>
+                      <select
+                        value={selectedOrderVendorFilter}
+                        onChange={(e) => setSelectedOrderVendorFilter(e.target.value)}
+                        className="border border-slate-200 bg-white text-slate-800 rounded-xl px-3 py-1.5 text-xs focus:outline-none font-semibold shadow-sm"
+                      >
+                        <option value="All">All Vendors</option>
+                        <option value="Apex Chem Co">Apex Chem Co</option>
+                        <option value="MedLife Ltd">MedLife Ltd</option>
+                        <option value="Hindustan Inc">Hindustan Inc</option>
+                      </select>
+                    </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
-                    {[
-                      { id: 'SO-901', client: 'Global Distribs', date: '2026-06-20', items: 'Silica Powder x100bags', warehouse: 'Mumbai WH-1', status: 'Dispatched', tracking: 'BLUEDART-8821' },
-                      { id: 'SO-902', client: 'Nexus Pharma', date: '2026-06-19', items: 'Stearic Acid x40drums', warehouse: 'Hyderabad WH-2', status: 'Processing', tracking: 'Pending Dispatch' },
-                      { id: 'SO-903', client: 'Alpha Traders', date: '2026-06-18', items: 'Industrial Ethanol x20drums', warehouse: 'Kolkata WH-3', status: 'Delivered', tracking: 'DELIVERED-091A' },
-                      { id: 'SO-904', client: 'Lotus Laboratories', date: '2026-06-15', items: 'Premium Grade Silica x5bags', warehouse: 'Chennai WH-4', status: 'Dispatched', tracking: 'DELIVERY-BY-ROAD' }
-                    ].map((ord) => (
-                      <div key={ord.id} className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm hover:border-slate-350 transition-colors space-y-3.5">
-                        <div className="flex justify-between items-center">
-                          <span className="text-[10px] font-mono bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded font-bold">{ord.id}</span>
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
-                            ord.status === 'Delivered' 
-                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
-                              : ord.status === 'Dispatched'
-                                ? 'bg-blue-50 text-blue-700 border border-blue-100 animate-pulse'
-                                : 'bg-amber-50 text-amber-700 border border-amber-100'
-                          }`}>{ord.status}</span>
-                        </div>
+                  {/* Grid Listing matching store orders */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 text-xs">
+                    {orders
+                      .filter(o => selectedOrderVendorFilter === 'All' ? true : o.vendor === selectedOrderVendorFilter)
+                      .map((ord) => {
+                        return (
+                          <div 
+                            key={ord.id} 
+                            onClick={() => {
+                              setSelectedOrderDetails(ord);
+                              setShowOrderDetailModal(true);
+                            }}
+                            className="bg-white border border-slate-200 p-5 rounded-2xl shadow-sm hover:border-blue-300 hover:shadow-md transition-all cursor-pointer space-y-3.5"
+                          >
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] font-mono bg-blue-50 text-blue-600 border border-blue-100 px-2 py-0.5 rounded font-bold">{ord.id}</span>
+                              <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                                ord.status === 'Delivered' 
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-100'
+                                  : ord.status === 'Processing' || ord.status === 'Approved'
+                                    ? 'bg-blue-50 text-blue-700 border border-blue-100'
+                                    : ord.status === 'Cancelled'
+                                      ? 'bg-rose-50 text-rose-700 border border-rose-100'
+                                      : 'bg-amber-50 text-amber-700 border border-amber-100 animate-pulse'
+                              }`}>{ord.status}</span>
+                            </div>
 
-                        <div className="space-y-1.5">
-                          <h4 className="font-extrabold text-sm text-slate-800">{ord.client}</h4>
-                          <p className="text-[10px] text-slate-500 font-semibold">{ord.items}</p>
-                        </div>
+                            <div className="space-y-1">
+                              <h4 className="font-extrabold text-sm text-slate-800">{ord.customer}</h4>
+                              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Vendor: <span className="text-slate-700 font-extrabold">{ord.vendor}</span></p>
+                            </div>
 
-                        <div className="pt-3 border-t border-slate-100 grid grid-cols-2 text-[10px] text-slate-600 font-medium">
-                          <div>
-                            <span>Logistics Hub</span>
-                            <p className="font-bold text-slate-850 mt-0.5">{ord.warehouse}</p>
+                            <div className="pt-3 border-t border-slate-100 flex justify-between items-center text-[10px] text-slate-500 font-medium">
+                              <div>
+                                <span>Order Date</span>
+                                <p className="font-bold text-slate-800 mt-0.5">{ord.date}</p>
+                              </div>
+                              <div className="text-right">
+                                <span>Order Value</span>
+                                <p className="font-black text-sm text-slate-900 mt-0.5">₹{ord.amount.toLocaleString('en-IN')}</p>
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <span>Tracking/Waybill</span>
-                            <p className="font-bold text-slate-850 mt-0.5">{ord.tracking}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                        );
+                      })}
                   </div>
                 </div>
               )}
@@ -5579,6 +5608,109 @@ export default function AdminDashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* ORDER DETAIL MODAL */}
+      {showOrderDetailModal && selectedOrderDetails && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center justify-between p-5 border-b border-slate-200">
+              <div>
+                <h3 className="text-sm font-black text-slate-800 flex items-center gap-2">
+                  <span>Order Details:</span>
+                  <span className="font-mono text-blue-600 bg-blue-50 px-2 py-0.5 rounded text-xs">{selectedOrderDetails.id}</span>
+                </h3>
+                <p className="text-[10px] text-slate-400 mt-0.5">Complete fulfillment parameters, vendor info, and status overrides</p>
+              </div>
+              <button
+                onClick={() => {
+                  setShowOrderDetailModal(false);
+                  setSelectedOrderDetails(null);
+                }}
+                className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6 text-xs text-slate-600">
+              {/* Grid info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-xl space-y-1">
+                  <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Customer Client</span>
+                  <p className="font-extrabold text-sm text-slate-800">{selectedOrderDetails.customer}</p>
+                  <span className="text-[9px] block text-slate-400 font-semibold mt-1">B2B Distribution Account</span>
+                </div>
+                <div className="bg-slate-50 border border-slate-100 p-3.5 rounded-xl space-y-1">
+                  <span className="text-[9px] text-slate-400 uppercase font-bold tracking-wider">Vendor Partner</span>
+                  <p className="font-extrabold text-sm text-slate-800">{selectedOrderDetails.vendor}</p>
+                  <span className="text-[9px] block text-slate-400 font-semibold mt-1">Apex Chem, MedLife, or Hindustan</span>
+                </div>
+              </div>
+
+              {/* Order Parameters */}
+              <div className="border border-slate-150 rounded-xl overflow-hidden divide-y divide-slate-100">
+                <div className="flex justify-between items-center p-3">
+                  <span className="font-bold text-slate-700">Date Issued</span>
+                  <span className="font-mono text-slate-800">{selectedOrderDetails.date}</span>
+                </div>
+                <div className="flex justify-between items-center p-3">
+                  <span className="font-bold text-slate-700">Estimated Delivery SLA</span>
+                  <span className="font-semibold text-slate-800">Within 7-10 Days (Standard)</span>
+                </div>
+                <div className="flex justify-between items-center p-3">
+                  <span className="font-bold text-slate-700">Total Purchase Value</span>
+                  <span className="font-extrabold text-slate-900 text-sm">₹{selectedOrderDetails.amount.toLocaleString('en-IN')}</span>
+                </div>
+                <div className="flex justify-between items-center p-3 bg-blue-50/20">
+                  <span className="font-bold text-slate-850">Fulfillment Status</span>
+                  
+                  {/* Status Dropdown to Edit status */}
+                  <select
+                    value={selectedOrderDetails.status}
+                    onChange={(e) => {
+                      const nextStatus = e.target.value as any;
+                      updateOrderStatus(selectedOrderDetails.id, nextStatus);
+                      setSelectedOrderDetails({ ...selectedOrderDetails, status: nextStatus });
+                      addActivity(`Admin changed Order ${selectedOrderDetails.id} status to ${nextStatus}`, 'order');
+                    }}
+                    className="border border-slate-200 bg-white text-slate-800 rounded-lg px-3 py-1 font-bold focus:outline-none"
+                  >
+                    <option value="Pending">Pending</option>
+                    <option value="Approved">Approved</option>
+                    <option value="Processing">Processing</option>
+                    <option value="Delivered">Delivered</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Logistics tracking info */}
+              <div className="space-y-2">
+                <h4 className="font-extrabold text-slate-800 uppercase tracking-widest text-[9px]">Fulfillment Logistics</h4>
+                <div className="p-3 bg-slate-50 border border-slate-150 rounded-xl flex items-center justify-between">
+                  <div className="space-y-1">
+                    <span className="text-[9px] text-slate-400 block font-bold">Courier Routing / Waybill</span>
+                    <span className="font-mono font-bold text-slate-700">WAYBILL-{selectedOrderDetails.id}-IND</span>
+                  </div>
+                  <span className="text-[10px] bg-slate-200/60 font-bold px-2 py-0.5 rounded text-slate-650">BlueDart Ground</span>
+                </div>
+              </div>
+
+              <div className="flex pt-4 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowOrderDetailModal(false);
+                    setSelectedOrderDetails(null);
+                  }}
+                  className="w-full bg-slate-900 hover:bg-slate-850 text-white rounded-xl py-3 font-bold shadow-md transition-all cursor-pointer"
+                >
+                  Close Detailed View
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
